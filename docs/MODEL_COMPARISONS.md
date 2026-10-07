@@ -86,3 +86,10 @@ statistics from existing evaluation files. Paired p-values are unadjusted and
 bootstrap intervals describe the specified image-level test split, not variation
 across training seeds or patients. The shared chat's single-seed results do not
 establish universal model superiority.
+
+The benchmark displays a `tqdm` progress bar across training, raw evaluation,
+and postprocessed evaluation stages, labeled with the current model and stage.
+A separate bar tracks paired statistics/bootstrap comparisons. Training retains
+its per-epoch batch progress. Overall progress advances when a stage completes;
+the ETA estimates stage time, not remaining training epochs. Dry runs print
+commands without progress bars.
