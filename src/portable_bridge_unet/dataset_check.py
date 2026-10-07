@@ -38,6 +38,15 @@ def check_dataset(config):
             report["raw_available"] = False
             report["missing"].append(str(exc))
     report["dataset_name"] = kind
+    if kind.lower() == "isic2016":
+        from .isic2016 import validate_source
+        try:
+            raw_parts = validate_source(config)
+            report.update(raw_available=True, raw_pairs=sum(map(len, raw_parts.values())),
+                          official_train_pairs=len(raw_parts["train"]), official_test_pairs=len(raw_parts["test"]))
+        except (OSError, ValueError) as exc:
+            report["raw_available"] = False
+            report["missing"].append(str(exc))
     if kind.lower() == "montgomery":
         from .montgomery import source_pairs, read_pair
         try:

@@ -16,7 +16,7 @@ def load_script(name):
     return module
 
 
-def test_overview_four_rows_and_source_manifest(tmp_path, monkeypatch):
+def test_overview_all_datasets_and_source_manifest(tmp_path, monkeypatch):
     module = load_script("plot_dataset_overview")
     smoke = tmp_path / "smoke"
     for name in module.DATASETS:
@@ -34,6 +34,7 @@ def test_overview_four_rows_and_source_manifest(tmp_path, monkeypatch):
     assert (out / "dataset_overview.pdf").is_file()
     manifest = json.loads((out / "dataset_overview_sources.json").read_text())
     assert "both lung fields" in manifest["montgomery"]["description"]
+    assert "RGB dermoscopic" in manifest["isic2016"]["description"]
     with pytest.raises(ValueError, match="Missing saved previews"):
         module.find_previews(smoke, 1)
 

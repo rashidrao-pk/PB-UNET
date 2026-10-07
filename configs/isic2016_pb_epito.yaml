@@ -1,0 +1,60 @@
+model: portable_bridge
+image_size: 256
+channels: 3
+filters:
+- 32
+- 64
+- 128
+batch_size: 8
+learning_rate: 0.0001
+epochs: 100
+loss: bce_dice
+threshold: 0.5
+split:
+  type: official_test_training_holdout
+  validation: 0.2
+  seed: 42
+postprocessing: []
+dataset:
+  name: isic2016
+  raw_root: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/raw/isic2016
+  prepared_root: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/isic2016
+  images: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/isic2016/images/*.png
+  masks: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/isic2016/masks/*.png
+  expected_pairs: 1279
+  expected_train_pairs: 900
+  expected_test_pairs: 379
+  target: Skin lesion foreground in RGB dermoscopy
+  preparation: Decoded RGB retained; binary lesion masks >127; lossless PNG; no preparation
+    resize or normalization
+train:
+  out_dir: ../runs/isic2016_pb
+  num_workers: 4
+  device: auto
+  amp: true
+  augment: false
+  patience: 30
+  lr_patience: 10
+  lr_factor: 0.05
+  train_split: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/isic2016/metadata/train_split.csv
+  val_split: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/isic2016/metadata/val_split.csv
+  test_split: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/isic2016/metadata/test_split.csv
+evaluate:
+  checkpoint: ../runs/isic2016_pb/best_dice.pt
+  split_csv: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/isic2016/metadata/test_split.csv
+  out_dir: ../runs/isic2016_pb/evaluation
+  device: auto
+  postprocess: false
+predict:
+  image: null
+  checkpoint: ../runs/isic2016_pb/best_dice.pt
+  output: ../runs/isic2016_pb/prediction.png
+  device: auto
+  postprocess: false
+smoke_test:
+  out_dir: ../runs/smoke_test/isic2016
+  num_samples: 6
+notes:
+- Official 379-image test set preserved; hold out 20% of official training set for
+  validation.
+- Shared PB experiment settings; not an exact LV-UNet protocol reproduction.

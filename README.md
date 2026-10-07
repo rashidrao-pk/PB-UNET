@@ -1,5 +1,8 @@
 # Portable-Bridge U-Net — PyTorch edition
 
+ISIC 2016 Task 1 is supported for RGB skin-lesion segmentation. See
+[ISIC setup](docs/ISIC2016.md) and the [requested three-paper dataset review](docs/RELATED_DATASETS.md).
+
 Montgomery County chest X-rays are now supported for **both-lung segmentation**.
 See [download, preparation, Epito training, benchmark, and figure instructions](docs/MONTGOMERY.md).
 

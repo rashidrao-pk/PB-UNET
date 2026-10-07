@@ -1,0 +1,14 @@
+pb_csv: ../runs/isic2016_pb/evaluation/per_image_raw.csv
+unet_csv: ../runs/isic2016_unet/evaluation/per_image_raw.csv
+out_dir: ../runs/comparison_isic2016
+pair_key: image_path
+metrics:
+- dice
+- iou
+- precision
+- recall
+- hd95
+tie_tolerance: 1.0e-08
+bootstrap_metric: dice
+bootstrap_resamples: 10000
+seed: 42

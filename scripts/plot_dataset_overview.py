@@ -37,6 +37,13 @@ DATASETS = {
         "using the union of manual left- and right-lung masks. "
         "The target is lung anatomy, not tuberculosis lesions.",
     ),
+    "isic2016": (
+        "ISIC 2016 — Skin Dermoscopy",
+        "RGB dermoscopic photographs of skin lesions with expert binary lesion "
+        "outlines. This experiment segments the lesion boundary and foreground, "
+        "rather than predicting a diagnosis. The official test set is retained "
+        "separately from training and validation.",
+    ),
 }
 
 
@@ -73,7 +80,7 @@ def main():
                         help="Zero-based sample index within each saved report")
     parser.add_argument("--out-dir", type=Path, default=ROOT / "runs/dataset_overview")
     parser.add_argument("--datasets", nargs="+", choices=list(DATASETS), default=list(DATASETS),
-                        help="Datasets to include, in row order (default: all four)")
+                        help="Datasets to include, in row order (default: all five)")
     args = parser.parse_args()
     if args.sample_index < 0:
         parser.error("--sample-index must be nonnegative")

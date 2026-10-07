@@ -2,6 +2,11 @@
 
 This document describes the datasets planned for the PyTorch reproduction and cross-domain validation of **Portable-Bridge U-Net (PB-U-Net)**.
 
+[ISIC 2016 Task 1](ISIC2016.md) is now implemented for RGB skin-lesion
+segmentation with the official test set preserved. See the
+[LV-UNet / brain-bridge / S-UNet dataset review](RELATED_DATASETS.md) for study
+protocols and the limits of comparing published scores with our experiments.
+
 Recommended order:
 
 1. **Sunnybrook / MICCAI 2009 Cardiac MRI** — reproduce the original paper.
