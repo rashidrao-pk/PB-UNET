@@ -1,5 +1,41 @@
 # Training
 
+## Create figures for all datasets on Epito
+
+From the repository root in your PyTorch environment:
+
+```bash
+python scripts/preview_datasets.py --num-samples 6
+```
+
+This uses `paper_legacy_epito.yaml`, `busi_pb_epito.yaml`, and
+`kvasir_pb_epito.yaml`. It checks dataset availability and creates the same
+bordered, titled **Image / Binary mask / Mask overlay** figures as the existing
+smoke tests. Each PNG shows the prepared target mask, not a model prediction.
+Resize and normalization match the configured loader, with augmentation disabled.
+
+Outputs are preserved in timestamped directories:
+
+```text
+runs/smoke_test/sunnybrook/<timestamp>/sample_00.png
+runs/smoke_test/busi/<timestamp>/sample_00.png
+runs/smoke_test/kvasir_seg/<timestamp>/sample_00.png
+```
+
+Each directory also contains the dataset/model report, architecture text, and
+resolved config. A missing dataset produces a failure report; the command still
+checks the remaining datasets and exits unsuccessfully if any check fails.
+Prepare missing data using the existing dataset preparation guides first.
+
+For one dataset or more samples:
+
+```bash
+python scripts/preview_datasets.py --configs configs/kvasir_pb_epito.yaml --num-samples 12
+```
+
+The figures use deterministic samples spaced across sorted prepared pairs.
+They do not necessarily select the same source image as an older sample number.
+
 Run commands from the repository root. All dataset paths and experiment settings
 come from YAML; command-line options override individual settings.
 
