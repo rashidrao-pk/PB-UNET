@@ -16,7 +16,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import yaml
 
@@ -57,10 +56,12 @@ def main() -> None:
     split = cfg["splits"]
     train_split, val_split, test_split = map(resolve, (split["train"], split["val"], split["test"]))
     out_root = Path(resolve(cfg.get("out_root", "../runs/benchmark")))
-    out_root.mkdir(parents=True, exist_ok=True)
+    if not args.dry_run:
+        out_root.mkdir(parents=True, exist_ok=True)
 
     t = cfg.get("training", {})
     common = [
+        "--seed", str(t.get("seed", cfg.get("seed", 42))),
         "--train-split", train_split,
         "--val-split", val_split,
         "--test-split", test_split,
@@ -78,8 +79,7 @@ def main() -> None:
         "--lr-factor", str(t.get("lr_factor", 0.05)),
         "--threshold", str(t.get("threshold", 0.5)),
     ]
-    if t.get("augment", False):
-        common.append("--augment")
+    common.append("--augment" if t.get("augment", False) else "--no-augment")
     if not t.get("amp", True):
         common.append("--no-amp")
 
@@ -94,6 +94,7 @@ def main() -> None:
                 sys.executable, "scripts/evaluate.py",
                 "--checkpoint", str(ckpt), "--split-csv", test_split,
                 "--out-dir", str(eval_dir), "--device", str(t.get("device", "auto")),
+                "--num-workers", str(t.get("num_workers", 4)),
             ], args.dry_run)
             if cfg.get("postprocess", True):
                 run([
@@ -101,9 +102,10 @@ def main() -> None:
                     "--checkpoint", str(ckpt), "--split-csv", test_split,
                     "--postprocess", "--out-dir", str(model_dir / "evaluation_postprocessed"),
                     "--device", str(t.get("device", "auto")),
+                    "--num-workers", str(t.get("num_workers", 4)),
                 ], args.dry_run)
 
-    if args.dry_run:
+    if args.dry_run or (args.skip_evaluation and not args.skip_training):
         return
 
     # Leaderboard from raw evaluation.
@@ -118,6 +120,8 @@ def main() -> None:
             **{f"{m}_mean": summary[m]["mean"] for m in ("dice", "iou", "precision", "recall", "accuracy", "hd95")},
             **{f"{m}_median": summary[m]["median"] for m in ("dice", "iou", "precision", "recall", "hd95")},
         })
+    if not rows:
+        raise ValueError("No evaluation summaries found; run evaluation before building the leaderboard")
     leaderboard = pd.DataFrame(rows).sort_values("dice_mean", ascending=False)
     leaderboard.to_csv(out_root / "leaderboard_raw.csv", index=False)
     print("\n=== RAW LEADERBOARD ===")

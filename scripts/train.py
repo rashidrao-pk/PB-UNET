@@ -381,6 +381,9 @@ def run_epoch(
                     masks,
                 )
 
+            if not torch.isfinite(loss):
+                raise FloatingPointError("Non-finite training/validation loss")
+
             if training:
 
                 if amp_enabled:
