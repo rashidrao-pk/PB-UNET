@@ -36,6 +36,28 @@ python scripts/preview_datasets.py --configs configs/kvasir_pb_epito.yaml --num-
 The figures use deterministic samples spaced across sorted prepared pairs.
 They do not necessarily select the same source image as an older sample number.
 
+### One combined figure with dataset descriptions
+
+After generating the previews on Epito:
+
+```bash
+python scripts/plot_dataset_overview.py
+```
+
+This combines one saved preview per dataset into a three-row figure, with
+descriptions of the imaging modality and segmentation target. It reads the
+latest usable smoke report for each dataset, including Sunnybrook reports saved
+directly under `runs/smoke_test/<timestamp>`. No original images or checkpoints
+are needed once the previews exist.
+
+Outputs are `runs/dataset_overview/dataset_overview.png` (300 DPI),
+`dataset_overview.pdf`, and `dataset_overview_sources.json` recording the exact
+reports, sample paths, descriptions, and prepared counts used. Counts describe
+the configured prepared data, rather than claiming the full source dataset size.
+Use `--sample-index 1` to select the second saved example in each dataset or
+`--smoke-dir PATH` to combine copied smoke artifacts. These examples illustrate
+the data and annotations; they are not model predictions or a performance comparison.
+
 Run commands from the repository root. All dataset paths and experiment settings
 come from YAML; command-line options override individual settings.
 
