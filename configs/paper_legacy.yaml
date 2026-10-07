@@ -1,0 +1,16 @@
+image_size: 256
+channels_in_code: 3
+filters: [32, 64, 128]
+loss: binary_crossentropy
+optimizer: Adam
+split:
+  type: image_level_random
+  seed: 42
+  validation_fraction_of_total: 0.15
+  test_fraction_of_total: 0.15
+postprocessing:
+  - morphological_hole_fill_by_reconstruction
+  - keep_largest_connected_component
+notes:
+  - The manuscript text says single-channel input, but the supplied code uses 3 channels.
+  - The legacy dataset split is image-wise, not patient-wise.
