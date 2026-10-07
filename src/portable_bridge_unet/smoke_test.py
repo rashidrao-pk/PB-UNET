@@ -10,6 +10,29 @@ from .data import SegmentationDataset, pair_by_stem
 from .models import build_model, count_trainable_parameters
 from .utils import save_json
 
+def make_preview(rgb, binary, overlay):
+    """Frame each panel and keep titles outside the image pixels."""
+    panels = []
+    for title, content in (
+        ("Image", rgb),
+        ("Binary mask", np.repeat(binary[..., None], 3, axis=2)),
+        ("Mask overlay", overlay),
+    ):
+        height, width = content.shape[:2]
+        # A minimum panel width keeps labels legible for small smoke-test inputs.
+        panel_width = max(width, 180) + 16
+        panel = np.full((height + 52, panel_width, 3), 245, dtype=np.uint8)
+        left = (panel_width - width) // 2
+        panel[44:44 + height, left:left + width] = content
+        cv2.rectangle(panel, (left - 1, 43), (left + width, 44 + height), (140, 140, 140), 1)
+        cv2.rectangle(panel, (0, 0), (panel_width - 1, height + 51), (100, 100, 100), 1)
+        text_width = cv2.getTextSize(title, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 1)[0][0]
+        cv2.putText(panel, title, ((panel_width - text_width) // 2, 27),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, (30, 30, 30), 1, cv2.LINE_AA)
+        panels.append(panel)
+    gap = np.full((panels[0].shape[0], 10, 3), 255, dtype=np.uint8)
+    return np.concatenate([panels[0], gap, panels[1], gap, panels[2]], axis=1)
+
 def save_smoke_test(config, dataset_report, out_dir, num_samples=6):
     if num_samples < 1:
         raise ValueError("num_samples must be positive")
@@ -57,7 +80,7 @@ def save_smoke_test(config, dataset_report, out_dir, num_samples=6):
                 overlay = rgb.copy()
                 selected = binary > 0
                 overlay[selected] = (0.6 * rgb[selected] + 0.4 * np.array([255, 0, 0])).astype(np.uint8)
-                preview = np.concatenate([rgb, np.repeat(binary[..., None], 3, axis=2), overlay], axis=1)
+                preview = make_preview(rgb, binary, overlay)
                 name = f"sample_{number:02d}.png"
                 if not cv2.imwrite(str(out / name), cv2.cvtColor(preview, cv2.COLOR_RGB2BGR)):
                     raise OSError(f"could not save {name}")

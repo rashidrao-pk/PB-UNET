@@ -18,7 +18,7 @@ def test_previews_and_model_forward(tmp_path):
     assert report["model"]["output_shape"] == [1, 1, 32, 32]
     assert len(report["samples"]) == 2
     preview = cv2.imread(str(out / report["samples"][0]["preview"]))
-    assert preview.shape == (32, 96, 3)
+    assert preview.shape[0] > 32 and preview.shape[1] > 96
     assert "BaselineUNet" in (out / "model_architecture.txt").read_text()
     assert json.loads((out / "resolved_config.json").read_text())["channels"] == 1
     assert json.loads((out / "report.json").read_text())["pretraining_ready"]
