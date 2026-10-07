@@ -72,3 +72,21 @@ Previous reports are preserved. Missing data still produces a failure report.
 
 Use `configs/baseline.yaml` to check the baseline architecture. Override
 `--num-samples 12` or `--out-dir runs/my_smoke_test` when needed.
+
+## BUSI sample previews
+
+For the prepared BUSI dataset on the cluster:
+
+```bash
+python scripts/check_dataset.py --config configs/busi_pb_epito.yaml --require-prepared
+```
+
+This saves the same labeled image/mask/overlay PNGs and model report under
+`runs/smoke_test/busi/<timestamp>/`. The checker uses BUSI image/mask pairs
+without requiring Sunnybrook DICOM directories. For the baseline architecture,
+select `configs/BUSI_epito_baseline.yaml`.
+
+These configs reference cluster paths under `/beegfs`. For local use, copy the
+config and set `dataset.images` and `dataset.masks` to the local prepared BUSI
+files. Previews reflect the configured PNG masks; they do not establish how
+the source BUSI annotations were prepared.

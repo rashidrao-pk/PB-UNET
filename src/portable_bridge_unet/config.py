@@ -56,6 +56,15 @@ def load_config(
 
     config = dict(config)
 
+    # Existing cluster BUSI configs use flat image/mask and training settings.
+    if "dataset" not in config and ("images" in config or "masks" in config):
+        config["dataset"] = {key: config[key] for key in ("images", "masks") if key in config}
+        config["dataset"]["name"] = "prepared_pairs"
+    if "train" not in config:
+        config["train"] = {key: config[key] for key in
+                           ("out_dir", "num_workers", "device", "amp", "augment",
+                            "train_split", "val_split", "test_split") if key in config}
+
     for section in (
         "dataset",
         "train",

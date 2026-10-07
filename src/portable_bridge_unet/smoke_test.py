@@ -46,8 +46,8 @@ def save_smoke_test(config, dataset_report, out_dir, num_samples=6):
         "versions": {"python": platform.python_version(), "torch": str(torch.__version__),
                      "numpy": np.__version__, "opencv": cv2.__version__},
         "preprocessing": {
-            "prepared_data": "PNG inputs; Sunnybrook preparation uses DICOM rescale then per-frame min-max uint8",
-            "target": "LV cavity from inner contours when using prepare_sunnybrook.py",
+            "prepared_data": config.get("dataset", {}).get("preparation", "PNG inputs; prior preparation unspecified"),
+            "target": config.get("dataset", {}).get("target", "binary foreground from configured masks"),
             "image_size": config.get("image_size", 256),
             "channels": config.get("channels", 3),
             "image_resize": "bilinear", "mask_resize": "nearest",

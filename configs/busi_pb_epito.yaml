@@ -27,3 +27,13 @@ augment: false
 amp: true
 
 out_dir: "runs/busi_pb"
+
+dataset:
+  name: busi
+  images: "/beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/lesions/images/*.png"
+  masks: "/beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/lesions/masks/*.png"
+  target: "Breast lesion foreground from prepared BUSI masks"
+  preparation: "Prepared PNG image/mask pairs; inspect source preparation separately"
+smoke_test:
+  out_dir: ../runs/smoke_test/busi
+  num_samples: 6

@@ -22,6 +22,9 @@ notes:
   - "For publication reruns, replace image-level splitting with patient/group-level splitting."
 
 dataset:
+  name: sunnybrook
+  target: "LV cavity from inner contours"
+  preparation: "DICOM rescale followed by per-frame min-max uint8 normalization"
   raw_root: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/raw
   # SC-N-05: series 4 has all 160 annotated cine frames; series 13 has only 140.
   series_overrides:
