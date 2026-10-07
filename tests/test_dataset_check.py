@@ -1,4 +1,4 @@
-from portable_bridge_unet.dataset_check import check_dataset
+from portable_bridge_unet.data.checks import check_dataset
 
 def test_missing_raw_dataset(tmp_path):
     report = check_dataset({"dataset": {

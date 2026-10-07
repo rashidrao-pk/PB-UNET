@@ -1,5 +1,4 @@
 import csv
-import importlib.util
 from pathlib import Path
 import zipfile
 
@@ -7,9 +6,9 @@ import cv2
 import numpy as np
 import pytest
 
-from portable_bridge_unet.dataset_check import check_dataset
-from portable_bridge_unet.isic2016 import FOLDERS, prepare_isic2016, source_pairs
-from portable_bridge_unet.smoke_test import save_smoke_test
+from portable_bridge_unet.data.checks import check_dataset
+from portable_bridge_unet.data.preprocess.isic2016 import FOLDERS, prepare_isic2016, source_pairs
+from portable_bridge_unet.data.visualization import save_smoke_test
 
 
 def fixture_config(tmp_path):
@@ -88,10 +87,7 @@ def test_invalid_isic_sources_fail_before_writes(tmp_path, failure):
 
 
 def test_official_archive_links_and_safe_extraction(tmp_path):
-    path = Path(__file__).resolve().parents[1] / "scripts/download_isic2016.py"
-    spec = importlib.util.spec_from_file_location("download_isic2016", path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    from portable_bridge_unet.data.retrieve import isic2016 as module
     links = module.ArchiveLinks()
     for folder in FOLDERS.values():
         links.feed(f'<a href="https://isic-archive.s3.amazonaws.com/2016/{folder}.zip">Download</a>')
@@ -103,3 +99,27 @@ def test_official_archive_links_and_safe_extraction(tmp_path):
     module.extract_images(archive, tmp_path / "extracted", masks=True)
     assert (tmp_path / "extracted/ISIC_0000001_Segmentation.png").read_bytes() == b"test bytes"
     assert not (tmp_path / "outside.txt").exists()
+
+
+def test_duplicate_exclusion_preserves_test_and_audits_training(tmp_path):
+    config = fixture_config(tmp_path)
+    config["dataset"]["cross_split_duplicates"] = "exclude_train"
+    train = tmp_path / "raw" / FOLDERS["train_images"] / "ISIC_0000000.jpg"
+    test = tmp_path / "raw" / FOLDERS["test_images"] / "ISIC_0000100.jpg"
+    cv2.imwrite(str(train), np.random.default_rng(42).integers(0, 256, (32, 40, 3), dtype=np.uint8))
+    test.write_bytes(train.read_bytes())
+    report = prepare_isic2016(config, dry_run=True)
+    assert report["excluded_train_ids"] == ["ISIC_0000000"]
+    assert report["cross_split_duplicates"][0]["test_ids"] == ["ISIC_0000100"]
+    assert report["official_train_pairs"] == 20
+    assert (report["train"], report["validation"], report["test"]) == (16, 3, 5)
+    assert not (tmp_path / "prepared").exists()
+    prepare_isic2016(config)
+    assert not (tmp_path / "prepared/images/ISIC_0000000.png").exists()
+    assert (tmp_path / "prepared/images/ISIC_0000100.png").exists()
+    assert check_dataset(config)["training_ready"]
+    # Old prepared copies must not be silently accepted or removed.
+    stale = tmp_path / "prepared/images/ISIC_0000000.png"
+    stale.write_bytes((tmp_path / "prepared/images/ISIC_0000100.png").read_bytes())
+    with pytest.raises(ValueError, match="fresh prepared_root"):
+        prepare_isic2016(config)

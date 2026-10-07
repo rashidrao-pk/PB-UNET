@@ -17,6 +17,7 @@ split:
 postprocessing: []
 dataset:
   name: isic2016
+  cross_split_duplicates: exclude_train
   raw_root: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/raw/isic2016
   prepared_root: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/isic2016
   images: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/isic2016/images/*.png
@@ -55,6 +56,6 @@ smoke_test:
   out_dir: ../runs/smoke_test/isic2016
   num_samples: 6
 notes:
-- Official 379-image test set preserved; hold out 20% of official training set for
+- Official 379-image test set preserved; exclude byte-identical training copies, then hold out 20% for
   validation.
 - Shared PB experiment settings; not an exact LV-UNet protocol reproduction.

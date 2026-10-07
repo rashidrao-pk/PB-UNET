@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 from pydicom.dataset import FileDataset, FileMetaDataset
 from pydicom.uid import ExplicitVRLittleEndian, generate_uid
-from portable_bridge_unet.preparation import prepare_dataset, plan_samples, rasterize_contour
+from portable_bridge_unet.data.preprocess.sunnybrook import prepare_dataset, plan_samples, rasterize_contour
 
 def test_prepare_and_manifest(tmp_path):
     raw = tmp_path / "raw"

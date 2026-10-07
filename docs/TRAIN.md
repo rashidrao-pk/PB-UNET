@@ -1,5 +1,9 @@
 # Training
 
+Dataset preparation and retrieval now live in the [data library](LIBRARY.md).
+The script commands below remain supported as CLI adapters; Python applications
+can call the same functions directly.
+
 ## Create figures for all datasets on Epito
 
 From the repository root in your PyTorch environment:

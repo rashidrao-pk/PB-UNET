@@ -1,21 +1,15 @@
 #!/usr/bin/env python3
-import argparse
-import json
-import sys
+"""Compatibility CLI; implementation lives in portable_bridge_unet.data.preprocess."""
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from portable_bridge_unet.config import load_config
-from portable_bridge_unet.kvasir import prepare_kvasir
+import sys
 
-def main():
-    parser = argparse.ArgumentParser(description="Validate and prepare Kvasir-SEG RGB images and binary polyp masks")
-    parser.add_argument("--config", default=str(Path(__file__).resolve().parents[1] / "configs/kvasir_pb.yaml"))
-    parser.add_argument("--dry-run", action="store_true")
-    args = parser.parse_args()
-    try:
-        print(json.dumps(prepare_kvasir(load_config(args.config), args.dry_run), indent=2))
-    except (ValueError, OSError) as exc:
-        parser.exit(1, f"Preparation failed: {exc}\nCheck dataset.raw_root in the selected config and the extracted folder. On Epito use --config configs/kvasir_pb_epito.yaml. See docs/KVASIR.md.\n")
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from portable_bridge_unet.data.cli import dataset_main
+
+
+def main(argv=None):
+    return dataset_main("preprocess", "kvasir_seg", "kvasir_pb.yaml", argv)
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

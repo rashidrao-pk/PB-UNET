@@ -5,9 +5,9 @@ import cv2
 import numpy as np
 import pytest
 
-from portable_bridge_unet.dataset_check import check_dataset
-from portable_bridge_unet.montgomery import prepare_montgomery, source_pairs
-from portable_bridge_unet.smoke_test import save_smoke_test
+from portable_bridge_unet.data.checks import check_dataset
+from portable_bridge_unet.data.preprocess.montgomery import prepare_montgomery, source_pairs
+from portable_bridge_unet.data.visualization import save_smoke_test
 
 
 def fixture_config(tmp_path):
@@ -83,7 +83,7 @@ def test_reject_invalid_source(tmp_path, failure):
 
 
 def test_high_bit_depth_is_explicitly_normalized(tmp_path):
-    from portable_bridge_unet.montgomery import read_pair
+    from portable_bridge_unet.data.preprocess.montgomery import read_pair
     config = fixture_config(tmp_path)
     pair = source_pairs(config)[0]
     image = np.linspace(0, 4095, 32 * 32).reshape(32, 32).astype(np.uint16)

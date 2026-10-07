@@ -1,5 +1,10 @@
 # Portable-Bridge U-Net — PyTorch edition
 
+Dataset code is organized as a reusable library under
+[`portable_bridge_unet.data`](src/portable_bridge_unet/data/): `retrieve`,
+`preprocess`, loaders, checks, and visualization. Existing script commands and
+imports remain compatible. See [library APIs and CLI usage](docs/LIBRARY.md).
+
 ISIC 2016 Task 1 is supported for RGB skin-lesion segmentation. See
 [ISIC setup](docs/ISIC2016.md) and the [requested three-paper dataset review](docs/RELATED_DATASETS.md).
 
