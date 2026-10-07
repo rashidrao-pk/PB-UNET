@@ -236,3 +236,13 @@ Training saves updated metric curves (`training_curves.png/.pdf`) each epoch.
 Evaluation saves score distributions and summary plots in PNG/PDF, with
 separate raw/postprocessed filenames. To generate plots for existing results,
 run `python scripts/plot_results.py`.
+
+For paired model statistics and reproducible bootstrap confidence intervals:
+
+```bash
+python scripts/compare_models.py --config configs/comparison_busi.yaml
+python scripts/bootstrap_comparison.py --config configs/comparison_busi.yaml
+```
+
+Use `configs/comparison_sunnybrook.yaml` for existing Sunnybrook results.
+See [evaluation documentation](docs/EVALUATE.md) for output files and interpretation.

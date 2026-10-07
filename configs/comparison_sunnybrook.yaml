@@ -1,0 +1,9 @@
+pb_csv: ../runs/pb_unet/evaluation/per_image_raw.csv
+unet_csv: ../runs/unet/evaluation/per_image_raw.csv
+out_dir: ../runs/comparisons/sunnybrook_raw
+pair_key: image_path
+metrics: [dice, iou, precision, recall, hd95]
+tie_tolerance: 0.00000001
+bootstrap_metric: dice
+bootstrap_resamples: 10000
+seed: 42

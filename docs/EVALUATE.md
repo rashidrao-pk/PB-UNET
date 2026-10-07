@@ -57,3 +57,42 @@ Generate plots from existing evaluation CSVs without evaluating again:
 ```bash
 python scripts/plot_results.py
 ```
+
+## Paired model comparison and bootstrap intervals
+
+After evaluating both models on the same BUSI test set:
+
+```bash
+python scripts/compare_models.py --config configs/comparison_busi.yaml
+python scripts/bootstrap_comparison.py --config configs/comparison_busi.yaml
+```
+
+Paths, metrics, bootstrap resamples, seed, and output directory come from the
+comparison YAML. The default paths match `runs/busi_pb/evaluation` and
+`runs/busi_unet/evaluation`. For Sunnybrook, use
+`--config configs/comparison_sunnybrook.yaml`. For postprocessed results, copy
+the config and change both input CSV paths and the output directory.
+
+The scripts pair rows by `image_path`, require identical unique image identities,
+and reject different target mask paths when both CSVs include them. Row order
+does not affect comparison. Set `pair_key` to another shared unique identifier
+if evaluation paths differ across systems; the scripts do not guess matches.
+
+`compare_models.py` saves `paired_comparison.csv` and
+`paired_comparison.json`, including finite pair counts, excluded nonfinite pairs,
+means, mean/median PB-minus-U-Net differences, wins/losses/ties, and two-sided
+Wilcoxon statistics and p-values. HD95 wins mean a lower distance; other metrics
+use a higher score. All-zero differences return p=1. Missing metrics cause an
+error; remove HD95 from the YAML list if it was not evaluated. P-values are
+unadjusted exploratory comparisons across metrics. Tie tolerance affects win
+counts only; Wilcoxon uses the original differences.
+
+`bootstrap_comparison.py` saves `bootstrap_dice.json` and
+`bootstrap_dice_samples.npz` with the mean and median bootstrap distributions.
+It uses 10,000 paired resamples, seed 42, and 95% percentile intervals by
+default. Positive Dice differences favor PB-U-Net. Override
+`--bootstrap-metric iou` to analyze another metric.
+
+Both analyses use images as the sampling unit. If several images belong to the
+same patient, these procedures do not account for within-patient dependence;
+patient-level analysis requires patient identities and grouped resampling.
