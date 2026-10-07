@@ -7,6 +7,8 @@ Recommended order:
 1. **Sunnybrook / MICCAI 2009 Cardiac MRI** — reproduce the original paper.
 2. **BUSI** — cross-modality validation on breast ultrasound.
 3. **Kvasir-SEG** — RGB endoscopic polyp segmentation.
+   **Montgomery County** is also implemented for chest X-ray lung segmentation;
+   see [the complete setup guide](MONTGOMERY.md).
 4. **CVC-ClinicDB** — additional polyp training data.
 5. **CVC-300, CVC-ColonDB, ETIS-LaribPolypDB** — external cross-dataset testing.
 6. **PRS-Med** — optional source/benchmark collection; not required for the first PB-U-Net experiments.

@@ -8,8 +8,8 @@ From the repository root in your PyTorch environment:
 python scripts/preview_datasets.py --num-samples 6
 ```
 
-This uses `paper_legacy_epito.yaml`, `busi_pb_epito.yaml`, and
-`kvasir_pb_epito.yaml`. It checks dataset availability and creates the same
+This uses `paper_legacy_epito.yaml`, `busi_pb_epito.yaml`,
+`kvasir_pb_epito.yaml`, and `montgomery_pb_epito.yaml`. It checks dataset availability and creates the same
 bordered, titled **Image / Binary mask / Mask overlay** figures as the existing
 smoke tests. Each PNG shows the prepared target mask, not a model prediction.
 Resize and normalization match the configured loader, with augmentation disabled.
@@ -20,6 +20,7 @@ Outputs are preserved in timestamped directories:
 runs/smoke_test/sunnybrook/<timestamp>/sample_00.png
 runs/smoke_test/busi/<timestamp>/sample_00.png
 runs/smoke_test/kvasir_seg/<timestamp>/sample_00.png
+runs/smoke_test/montgomery/<timestamp>/sample_00.png
 ```
 
 Each directory also contains the dataset/model report, architecture text, and
@@ -44,7 +45,7 @@ After generating the previews on Epito:
 python scripts/plot_dataset_overview.py
 ```
 
-This combines one saved preview per dataset into a three-row figure, with
+This combines one saved preview per dataset into a four-row figure, with
 descriptions of the imaging modality and segmentation target. It reads the
 latest usable smoke report for each dataset, including Sunnybrook reports saved
 directly under `runs/smoke_test/<timestamp>`. No original images or checkpoints

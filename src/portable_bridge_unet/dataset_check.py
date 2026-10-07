@@ -38,6 +38,16 @@ def check_dataset(config):
             report["raw_available"] = False
             report["missing"].append(str(exc))
     report["dataset_name"] = kind
+    if kind.lower() == "montgomery":
+        from .montgomery import source_pairs, read_pair
+        try:
+            raw_pairs = source_pairs(config)
+            for pair in raw_pairs:
+                read_pair(pair)
+            report.update(raw_available=True, raw_pairs=len(raw_pairs))
+        except (OSError, ValueError) as exc:
+            report["raw_available"] = False
+            report["missing"].append(str(exc))
     try:
         samples = pair_by_stem(sorted(glob(dataset["images"], recursive=True)),
                                sorted(glob(dataset["masks"], recursive=True)))

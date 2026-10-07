@@ -1,0 +1,56 @@
+model: unet
+image_size: 256
+channels: 3
+filters:
+- 32
+- 64
+- 128
+batch_size: 8
+learning_rate: 0.0001
+epochs: 100
+loss: bce_dice
+threshold: 0.5
+split:
+  type: filename_id_stratified
+  train: 0.7
+  validation: 0.15
+  test: 0.15
+  seed: 42
+postprocessing: []
+dataset:
+  name: montgomery
+  raw_root: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/raw/montgomery/MontgomerySet
+  prepared_root: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/montgomery
+  images: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/montgomery/images/*.png
+  masks: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/montgomery/masks/*.png
+  expected_pairs: 138
+  target: Union of manually annotated left and right lungs
+  preparation: Uint8 grayscale preserved; uint16 per-image min-max to uint8; nonzero
+    lung-mask union; PNG; no resize
+train:
+  out_dir: ../runs/montgomery_unet
+  num_workers: 4
+  device: auto
+  amp: true
+  augment: false
+  patience: 30
+  lr_patience: 10
+  lr_factor: 0.05
+  train_split: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/montgomery/metadata/train_split.csv
+  val_split: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/montgomery/metadata/val_split.csv
+  test_split: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/montgomery/metadata/test_split.csv
+evaluate:
+  checkpoint: ../runs/montgomery_unet/best_dice.pt
+  split_csv: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/montgomery/metadata/test_split.csv
+  out_dir: ../runs/montgomery_unet/evaluation
+  device: auto
+  postprocess: false
+predict:
+  image: null
+  checkpoint: ../runs/montgomery_unet/best_dice.pt
+  output: ../runs/montgomery_unet/prediction.png
+  device: auto
+  postprocess: false
+smoke_test:
+  out_dir: ../runs/smoke_test/montgomery
+  num_samples: 6

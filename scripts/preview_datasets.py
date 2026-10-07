@@ -7,7 +7,8 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIGS = [ROOT / "configs" / name for name in (
-    "paper_legacy_epito.yaml", "busi_pb_epito.yaml", "kvasir_pb_epito.yaml")]
+    "paper_legacy_epito.yaml", "busi_pb_epito.yaml", "kvasir_pb_epito.yaml",
+    "montgomery_pb_epito.yaml")]
 sys.path.insert(0, str(ROOT / "src"))
 from portable_bridge_unet.config import load_config
 
@@ -15,7 +16,7 @@ from portable_bridge_unet.config import load_config
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--configs", nargs="+", type=Path, default=DEFAULT_CONFIGS,
-                        help="Dataset configs (default: all three Epito datasets)")
+                        help="Dataset configs (default: all four Epito datasets)")
     parser.add_argument("--num-samples", type=int, default=6)
     parser.add_argument("--out-dir", type=Path, default=ROOT / "runs/smoke_test",
                         help="Parent directory; each dataset gets its own subdirectory")

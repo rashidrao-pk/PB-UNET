@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Combine saved Sunnybrook, BUSI, and Kvasir smoke previews into one figure."""
+"""Combine saved dataset smoke previews and descriptions into one figure."""
 import argparse
 import json
 from pathlib import Path
@@ -30,17 +30,25 @@ DATASETS = {
         "The segmentation target is the polyp foreground, supporting automatic "
         "localization and delineation of colorectal polyps.",
     ),
+    "montgomery": (
+        "Montgomery — Lung X-rays",
+        "Posterior-anterior chest X-rays from tuberculosis screening, including "
+        "normal and abnormal cases. This experiment segments both lung fields "
+        "using the union of manual left- and right-lung masks. "
+        "The target is lung anatomy, not tuberculosis lesions.",
+    ),
 }
 
 
-def find_previews(root, sample_index):
+def find_previews(root, sample_index, datasets=None):
     """Choose the latest saved report with a usable preview for each dataset."""
     selected = {}
+    datasets = list(DATASETS) if datasets is None else datasets
     for path in sorted(root.rglob("report.json")):
         report = json.loads(path.read_text())
         name = report.get("dataset", {}).get("dataset_name")
         samples = report.get("samples", [])
-        if name not in DATASETS or len(samples) <= sample_index:
+        if name not in datasets or len(samples) <= sample_index:
             continue
         sample = samples[sample_index]
         preview = path.parent / sample["preview"]
@@ -51,7 +59,7 @@ def find_previews(root, sample_index):
             selected[name] = dict(created_utc=stamp, report=str(path.resolve()),
                                   preview=str(preview.resolve()), sample=sample,
                                   prepared_pairs=report["dataset"].get("prepared_pairs"))
-    missing = set(DATASETS) - selected.keys()
+    missing = set(datasets) - selected.keys()
     if missing:
         raise ValueError("Missing saved previews for: " + ", ".join(sorted(missing)) +
                          ". Run python scripts/preview_datasets.py first.")
@@ -64,17 +72,20 @@ def main():
     parser.add_argument("--sample-index", type=int, default=0,
                         help="Zero-based sample index within each saved report")
     parser.add_argument("--out-dir", type=Path, default=ROOT / "runs/dataset_overview")
+    parser.add_argument("--datasets", nargs="+", choices=list(DATASETS), default=list(DATASETS),
+                        help="Datasets to include, in row order (default: all four)")
     args = parser.parse_args()
     if args.sample_index < 0:
         parser.error("--sample-index must be nonnegative")
     try:
-        selected = find_previews(args.smoke_dir, args.sample_index)
+        selected = find_previews(args.smoke_dir, args.sample_index, args.datasets)
     except (ValueError, OSError) as exc:
         parser.error(str(exc))
 
-    fig = plt.figure(figsize=(15, 10), facecolor="white")
-    grid = fig.add_gridspec(3, 2, width_ratios=[1, 2.7], hspace=.20, wspace=.08)
-    for row, (name, (title, description)) in enumerate(DATASETS.items()):
+    fig = plt.figure(figsize=(15, 3 * len(args.datasets) + 1), facecolor="white")
+    grid = fig.add_gridspec(len(args.datasets), 2, width_ratios=[1, 2.7], hspace=.20, wspace=.08)
+    for row, name in enumerate(args.datasets):
+        title, description = DATASETS[name]
         source = selected[name]
         text_ax = fig.add_subplot(grid[row, 0])
         text_ax.axis("off")

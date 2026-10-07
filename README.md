@@ -1,5 +1,8 @@
 # Portable-Bridge U-Net — PyTorch edition
 
+Montgomery County chest X-rays are now supported for **both-lung segmentation**.
+See [download, preparation, Epito training, benchmark, and figure instructions](docs/MONTGOMERY.md).
+
 This is the **active PyTorch rewrite** of the supplied Portable-Bridge U-Net project. TensorFlow/Keras is no longer required for training, evaluation, inference, metrics, or post-processing.
 
 The `portable_bridge_legacy` model preserves the paper-era architecture. The revised `portable_bridge` adds refinement, bilinear upsampling, and spatial dropout; it is a separate experiment.
