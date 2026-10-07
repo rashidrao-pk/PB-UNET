@@ -231,3 +231,6 @@ runs/**
 
 # Generated medical dataset and source manifest
 /data/
+
+.DS_Store
+.DS_Store/**

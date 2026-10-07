@@ -79,18 +79,29 @@ python -m pytest -q
 The raw dataset is present at the configured location. The preparation script
 creates PNG image/mask pairs before checking training readiness.
 
-- Upload Dataset to Server
+## Upload Dataset to Server
 
 ```bash
 cd /Users/rashid/data/DS/Healthcare
 zip -r PB_U-NET.zip PB_U-NET -x '*/.DS_Store'
 
-scp /Users/rashid/data/DS/SR/v6/Jul27/test.zip mrashid@slurm.hpc4ai.unito.it:/beegfs/home/mrashid/datasets/Healthcare
+
+
+scp /Users/rashid/data/DS/Healthcare/PB_U-NET.zip mrashid@slurm.hpc4ai.unito.it:/beegfs/home/mrashid/datasets/Healthcare
+
+scp /Users/rashid/data/DS/Healthcare/data.zip mrashid@slurm.hpc4ai.unito.it:/beegfs/home/mrashid/datasets/Healthcare
 
 # Upload test data
 
-unzip -o /beegfs/home/mrashid/datasets/AD/SR/V6/test.zip \
-  -d /beegfs/home/mrashid/datasets/AD/SR/V6/test \
+unzip -o /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET.zip \
+  -d /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET \
   -x "__MACOSX/*"
+
+unzip -o /beegfs/home/mrashid/datasets/Healthcare/data.zip \
+  -d /beegfs/home/mrashid/datasets/Healthcare/data \
+  -x "__MACOSX/*"
+
+ls -lah /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET
+du -sh /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET
 
 ```
