@@ -2,6 +2,9 @@
 from importlib import import_module
 
 PREPARERS = {
+    "brats2020": ("brats", "prepare_brats"),
+    "brats2021": ("brats", "prepare_brats"),
+    "drive": ("drive", "prepare_drive"),
     "sunnybrook": ("sunnybrook", "prepare_sunnybrook"),
     "kvasir_seg": ("kvasir", "prepare_kvasir"),
     "montgomery": ("montgomery", "prepare_montgomery"),

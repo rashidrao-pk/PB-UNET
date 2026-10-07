@@ -141,3 +141,5 @@ Add the preparation implementation under `data/preprocess/`, register it in
 add it under `data/retrieve/` and register it in `RETRIEVERS`. Keep dataset/split
 policies in the implementation and paths in YAML. The shared CLI then exposes
 the new dataset without adding another algorithm-bearing script.
+
+BraTS 2020/2021 and DRIVE preparers are also registered in `data.preprocess`. See [BraTS](BRATS.md) and [DRIVE](DRIVE.md) for access instructions, layouts and protocol details. Their authenticated downloads remain manual. `Sample.roi` and CSV `roi` fields optionally carry field-of-view masks through loaders and evaluation.

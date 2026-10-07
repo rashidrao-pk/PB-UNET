@@ -18,6 +18,7 @@ class Sample:
     image: str
     mask: str
     group: str | None = None
+    roi: str | None = None
 
 
 def load_samples_csv(path: str | Path) -> list[Sample]:
@@ -79,6 +80,7 @@ def load_samples_csv(path: str | Path) -> list[Sample]:
                     image=image,
                     mask=mask,
                     group=group,
+                    roi=(row.get("roi") or "").strip() or None,
                 )
             )
 
@@ -281,6 +283,19 @@ class SegmentationDataset(Dataset):
             interpolation=cv2.INTER_NEAREST,
         )
 
+        roi = np.ones_like(mask, dtype=np.uint8) * 255
+        if sample.roi:
+            roi_source = cv2.imread(sample.roi, cv2.IMREAD_GRAYSCALE)
+            if roi_source is None:
+                raise FileNotFoundError(sample.roi)
+            original_mask = cv2.imread(sample.mask, cv2.IMREAD_GRAYSCALE)
+            if roi_source.shape != original_mask.shape:
+                raise ValueError(f"Field-of-view/mask dimensions differ: {sample.roi}")
+            if not set(np.unique(roi_source)).issubset({0, 255}):
+                raise ValueError(f"Expected binary field of view: {sample.roi}")
+            roi = cv2.resize(roi_source, (self.image_size, self.image_size), interpolation=cv2.INTER_NEAREST)
+            if not roi.any():
+                raise ValueError(f"Empty field of view: {sample.roi}")
         if self.augment:
             if random.random() < 0.5:
                 image = np.flip(
@@ -292,6 +307,7 @@ class SegmentationDataset(Dataset):
                     mask,
                     axis=1,
                 ).copy()
+                roi = np.flip(roi, axis=1).copy()
 
             if random.random() < 0.5:
                 image = np.flip(
@@ -303,6 +319,7 @@ class SegmentationDataset(Dataset):
                     mask,
                     axis=0,
                 ).copy()
+                roi = np.flip(roi, axis=0).copy()
 
         image = image.astype(np.float32) / 255.0
 
@@ -320,7 +337,7 @@ class SegmentationDataset(Dataset):
 
         mask = mask[None, ...]
 
-        return image, mask
+        return image, mask, (roi[None, ...] > 127).astype(np.float32)
 
     def __getitem__(
         self,
@@ -329,11 +346,13 @@ class SegmentationDataset(Dataset):
 
         sample = self.samples[index]
 
-        image, mask = self._read(sample)
+        image, mask, roi = self._read(sample)
 
         return {
             "image": torch.from_numpy(image),
             "mask": torch.from_numpy(mask),
+            "roi": torch.from_numpy(roi),
+            "roi_path": sample.roi or "",
             "image_path": sample.image,
             "mask_path": sample.mask,
             "group": sample.group or "",

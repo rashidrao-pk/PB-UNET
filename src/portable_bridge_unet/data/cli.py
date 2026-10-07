@@ -20,7 +20,7 @@ def _execute(parser, args, operation, dataset=None):
         report = function(config, dry_run=args.dry_run)
         print(json.dumps(report, indent=2))
         return 0
-    except (OSError, ValueError, BadZipFile) as exc:
+    except (OSError, ValueError, ImportError, BadZipFile) as exc:
         parser.exit(1, f"{operation.capitalize()} failed: {exc}\nCheck the selected config and dataset guide; see docs/LIBRARY.md.\n")
 
 

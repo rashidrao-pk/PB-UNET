@@ -295,3 +295,5 @@ python scripts/run_benchmark.py --config configs/benchmark_busi_epito.yaml
 ```
 
 See `docs/MODEL_COMPARISONS.md` for the experimental protocol and ablation order.
+
+Additional datasets: [BraTS 2020/2021](docs/BRATS.md) (case-separated 2D FLAIR tumor segmentation) and [DRIVE](docs/DRIVE.md) (RGB retinal vessels with FOV-aware metrics). Both provide preparation, Epito/local PB and U-Net configs, benchmarks, and smoke previews.

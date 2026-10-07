@@ -246,6 +246,7 @@ def write_split(
                 "image",
                 "mask",
                 "group",
+                "roi",
             ]
         )
 
@@ -255,6 +256,7 @@ def write_split(
                     s.image,
                     s.mask,
                     s.group or "",
+                    s.roi or "",
                 ]
             )
 
@@ -399,6 +401,7 @@ def run_epoch(
             logits.detach(),
             masks,
             threshold,
+            roi=batch["roi"].to(device) if "roi" in batch else None,
         )
 
         sums["loss"] += (

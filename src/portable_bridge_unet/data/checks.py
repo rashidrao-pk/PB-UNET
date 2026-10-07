@@ -26,6 +26,17 @@ def check_dataset(config):
         report = dict(raw_root=str(root) if root else None,
                       raw_available=root.is_dir() if root else None,
                       missing=[], training_ready=False, prepared_pairs=0)
+    if kind.lower() in ("brats2020", "brats2021", "drive"):
+        from importlib import import_module
+        module = import_module(f"{__package__}.preprocess." + ("drive" if kind.lower() == "drive" else "brats"))
+        try:
+            sources = module.validate_source(config)
+            report["raw_available"] = True
+            report["raw_cases" if kind.lower().startswith("brats") else "raw_pairs"] = (
+                len(sources) if isinstance(sources, list) else sum(map(len, sources.values())))
+        except (OSError, ValueError, ImportError) as exc:
+            report["raw_available"] = False
+            report["missing"].append(str(exc))
     if kind.lower() == "kvasir_seg":
         from .preprocess.kvasir import source_pairs, read_pair
         try:
@@ -71,6 +82,18 @@ def check_dataset(config):
             excluded = set(report.get("excluded_train_ids", []))
             if any(Path(sample.image).stem.upper() in excluded for sample in samples):
                 raise ValueError("Prepared data still contains excluded training duplicates; use a fresh prepared_root")
+        if kind.lower() in ("brats2020", "brats2021", "drive"):
+            from .loaders import load_samples_csv
+            split_samples = [load_samples_csv(config["train"][f"{name}_split"]) for name in ("train", "val", "test")]
+            groups = [{sample.group for sample in subset} for subset in split_samples]
+            if any(None in group for group in groups) or any(groups[i] & groups[j] for i, j in ((0, 1), (0, 2), (1, 2))):
+                raise ValueError("Prepared splits must have nonempty disjoint case/image groups")
+            declared = [sample for subset in split_samples for sample in subset]
+            if len(declared) != len(samples) or {s.image for s in declared} != {s.image for s in samples}:
+                raise ValueError("Prepared split manifests do not cover the prepared inventory exactly once")
+            if kind.lower() == "drive" and any(not sample.roi for sample in declared):
+                raise ValueError("DRIVE split manifests require roi field-of-view paths")
+            samples = declared
         ds = SegmentationDataset(samples, config.get("image_size", 256), config.get("channels", 3))
         for index in range(len(ds)):
             ds[index]
@@ -78,6 +101,6 @@ def check_dataset(config):
         if report["raw_available"] is None:
             report["raw_available"] = True
             report["raw_check"] = "not configured; checking prepared pairs only"
-    except (ValueError, FileNotFoundError) as exc:
+    except (ValueError, FileNotFoundError, KeyError) as exc:
         report["preparation_issue"] = str(exc)
     return report

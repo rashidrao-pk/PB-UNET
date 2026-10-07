@@ -10,6 +10,24 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
 DATASETS = {
+    "brats2020": (
+        "BraTS 2020 — Brain MRI",
+        "Labeled glioma MRI cases. This experiment uses axial FLAIR slices and "
+        "binary whole-tumor masks, with cases separated before slicing. "
+        "It is a 2D internal holdout experiment, not the official 3D challenge protocol.",
+    ),
+    "brats2021": (
+        "BraTS 2021 — Brain MRI",
+        "A separate release of labeled glioma MRI cases. Axial FLAIR slices "
+        "are used for whole-tumor segmentation, with case-separated holdouts. "
+        "This release must not be assumed independent of BraTS 2020.",
+    ),
+    "drive": (
+        "DRIVE — Retinal Fundus",
+        "RGB retinal fundus photographs for blood-vessel segmentation. "
+        "First manual annotations define vessels; field-of-view masks define "
+        "the evaluation domain. The official test split is preserved.",
+    ),
     "sunnybrook": (
         "Sunnybrook Cardiac MRI",
         "Cardiac cine MRI used to study heart anatomy and function. "
