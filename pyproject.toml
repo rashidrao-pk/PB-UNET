@@ -8,6 +8,8 @@ version = "0.2.0"
 description = "PyTorch implementation of Portable-Bridge U-Net for medical image segmentation"
 requires-python = ">=3.10"
 dependencies = [
+  "PyYAML>=6.0",
+  "pydicom>=3.0",
   "torch>=2.2",
   "numpy>=1.24",
   "opencv-python>=4.8",
@@ -19,3 +21,10 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[project.optional-dependencies]
+test = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

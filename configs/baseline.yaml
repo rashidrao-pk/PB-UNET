@@ -1,4 +1,4 @@
-model: portable_bridge
+model: unet
 image_size: 256
 channels: 3
 filters: [32, 64, 128]
@@ -30,7 +30,7 @@ dataset:
   images: ../data/sunnybrook/images/**/*.png
   masks: ../data/sunnybrook/masks/**/*.png
 train:
-  out_dir: ../runs/pb_unet
+  out_dir: ../runs/unet
   num_workers: 4
   device: auto
   amp: true
@@ -38,15 +38,15 @@ train:
   patience: 30
   lr_factor: 0.05
 evaluate:
-  checkpoint: ../runs/pb_unet/best.pt
-  split_csv: ../runs/pb_unet/test_split.csv
-  out_dir: ../runs/pb_unet/evaluation
+  checkpoint: ../runs/unet/best.pt
+  split_csv: ../runs/unet/test_split.csv
+  out_dir: ../runs/unet/evaluation
   device: auto
 predict:
   # Set this to a prepared input image before running prediction.
   image: null
-  checkpoint: ../runs/pb_unet/best.pt
-  output: ../runs/pb_unet/prediction.png
+  checkpoint: ../runs/unet/best.pt
+  output: ../runs/unet/prediction.png
   device: auto
 
 smoke_test:

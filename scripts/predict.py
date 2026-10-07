@@ -12,30 +12,28 @@ import torch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from portable_bridge_unet.models import build_model
+from portable_bridge_unet.checkpoints import load_checkpoint
 from portable_bridge_unet.postprocess import postprocess
+from portable_bridge_unet.config import parse_config_args
 from portable_bridge_unet.utils import resolve_device
 
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("--checkpoint", required=True)
-    p.add_argument("--image", required=True)
-    p.add_argument("--output", required=True)
+    p.add_argument("--checkpoint", default=None, help="Checkpoint path (default: config)")
+    p.add_argument("--image", default=None, help="Prepared input image (set predict.image in config or pass here)")
+    p.add_argument("--output", default=None, help="Prediction output path (default: config)")
     p.add_argument("--device", default="auto")
     p.add_argument("--threshold", type=float, default=None)
     p.add_argument("--postprocess", action="store_true")
-    args = p.parse_args()
+    args = parse_config_args(p, "predict")
 
     device = resolve_device(args.device)
-    ckpt = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
+    model, ckpt = load_checkpoint(args.checkpoint, device)
     channels = int(ckpt.get("in_channels", 3))
     size = int(ckpt.get("image_size", 256))
     threshold = ckpt.get("threshold", 0.5) if args.threshold is None else args.threshold
 
-    model = build_model(ckpt["model_name"], channels, filters=ckpt.get("filters", [32, 64, 128]))
-    model.load_state_dict(ckpt["model_state"])
-    model.to(device).eval()
 
     flag = cv2.IMREAD_GRAYSCALE if channels == 1 else cv2.IMREAD_COLOR
     image = cv2.imread(args.image, flag)

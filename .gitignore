@@ -221,3 +221,13 @@ __marimo__/
 
 # Remove all zip files from the repository
 *.zip
+
+# Remove all tar files from the repository
+*.tar
+
+# Remove all result files from the repository
+*.result
+runs/**
+
+# Generated medical dataset and source manifest
+/data/

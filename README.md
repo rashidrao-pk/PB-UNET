@@ -6,18 +6,18 @@ The rewrite preserves the architecture actually encoded in the paper-era source 
 
 ## What was converted
 
-| Old TensorFlow/Keras component | PyTorch replacement |
-|---|---|
-| `model.py` baseline U-Net | `src/portable_bridge_unet/models.py::BaselineUNet` |
+| Old TensorFlow/Keras component   | PyTorch replacement                                      |
+| -------------------------------- | -------------------------------------------------------- |
+| `model.py` baseline U-Net        | `src/portable_bridge_unet/models.py::BaselineUNet`       |
 | `prop_model.py` proposed network | `src/portable_bridge_unet/models.py::PortableBridgeUNet` |
-| `tf.data` image pipeline | `torch.utils.data.Dataset/DataLoader` |
-| Keras BCE | `torch.nn.BCEWithLogitsLoss` |
-| Keras Adam | `torch.optim.Adam` |
-| `ModelCheckpoint` | PyTorch checkpoint `best.pt` |
-| `ReduceLROnPlateau` | `torch.optim.lr_scheduler.ReduceLROnPlateau` |
-| Keras training loop | `scripts/train.py` |
-| prediction/evaluation notebooks | `scripts/evaluate.py`, `scripts/predict.py` |
-| skimage post-processing | OpenCV hole fill + largest connected component |
+| `tf.data` image pipeline         | `torch.utils.data.Dataset/DataLoader`                    |
+| Keras BCE                        | `torch.nn.BCEWithLogitsLoss`                             |
+| Keras Adam                       | `torch.optim.Adam`                                       |
+| `ModelCheckpoint`                | PyTorch checkpoint `best.pt`                             |
+| `ReduceLROnPlateau`              | `torch.optim.lr_scheduler.ReduceLROnPlateau`             |
+| Keras training loop              | `scripts/train.py`                                       |
+| prediction/evaluation notebooks  | `scripts/evaluate.py`, `scripts/predict.py`              |
+| skimage post-processing          | OpenCV hole fill + largest connected component           |
 
 The three Keras source files retained under `legacy_tensorflow_reference/` are **reference only** and are not imported by the new pipeline.
 
@@ -69,7 +69,9 @@ Some saved historical `.h5` checkpoints in the supplied archive were created aft
 cd portable_bridge_pytorch
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .
+# pip install -e .
+pip install -e . --no-deps
+
 pip install pytest
 ```
 
@@ -80,32 +82,18 @@ For an NVIDIA GPU, install the appropriate CUDA-enabled PyTorch build for your m
 The implementation defaults to the code's actual 3-channel input, 256x256 images, BCE, Adam and filters 32/64/128:
 
 ```bash
-python scripts/train.py \
-  --images '/path/to/images/**/*.*' \
-  --masks '/path/to/masks/**/*.*' \
-  --model portable_bridge \
-  --channels 3 \
-  --image-size 256 \
-  --batch-size 8 \
-  --lr 1e-4 \
-  --epochs 100 \
-  --out-dir runs/pb_unet
+python scripts/train.py --config configs/paper_legacy.yaml
 ```
 
 Baseline:
 
 ```bash
-python scripts/train.py \
-  --images '/path/to/images/**/*.*' \
-  --masks '/path/to/masks/**/*.*' \
-  --model unet \
-  --channels 3 \
-  --image-size 256 \
-  --batch-size 8 \
-  --lr 1e-4 \
-  --epochs 100 \
-  --out-dir runs/unet
+python scripts/train.py --config configs/baseline.yaml
 ```
+
+Prepare the data with `python scripts/prepare_sunnybrook.py`, then check readiness
+with `python scripts/check_dataset.py --require-prepared`.
+Dataset paths and hyperparameters live in the selected YAML file.
 
 The trainer saves the **actual split files** used for the run:
 
@@ -125,33 +113,29 @@ That makes the experiment reproducible and avoids the old notebook ambiguity.
 Raw output:
 
 ```bash
-python scripts/evaluate.py \
-  --checkpoint runs/pb_unet/best.pt \
-  --split-csv runs/pb_unet/test_split.csv \
-  --out-dir runs/pb_unet/evaluation
+python scripts/evaluate.py --config configs/paper_legacy.yaml
 ```
 
 With the manuscript post-processing:
 
 ```bash
-python scripts/evaluate.py \
-  --checkpoint runs/pb_unet/best.pt \
-  --split-csv runs/pb_unet/test_split.csv \
-  --postprocess \
-  --out-dir runs/pb_unet/evaluation
+python scripts/evaluate.py --config configs/paper_legacy.yaml --postprocess
 ```
+
+Use `configs/baseline.yaml` to evaluate the baseline run.
 
 The evaluator reports **every image**, without the legacy script's score-based filtering or duplicate appending. Outputs include per-image CSV and mean/std/median for Dice, IoU, precision, recall, accuracy and HD95.
 
 ## Predict one image
 
 ```bash
-python scripts/predict.py \
-  --checkpoint runs/pb_unet/best.pt \
-  --image /path/to/image.png \
-  --output prediction.png \
-  --postprocess
+python scripts/predict.py --config configs/paper_legacy.yaml --postprocess
 ```
+
+Set `predict.image` in the YAML to the prepared image to predict. The checkpoint
+and output paths are already configured. You can also override individual
+settings on the command line.
+
 
 ## CPU / CUDA / Apple Silicon
 
@@ -207,3 +191,43 @@ Tests verify output dimensions, exact trainable parameter parity, and the post-p
 ## Recommended next step
 
 Do **not** convert the questionable historical H5 weights blindly. Re-run the baseline and proposed models from scratch with this deterministic PyTorch implementation, save the complete test-set metrics, and use those results as the trusted foundation for the revised manuscript and external-dataset experiments.
+
+## Shared configuration and dataset checks
+
+All active scripts load `configs/paper_legacy.yaml` by default. Use
+`--config path/to/experiment.yaml` to select another file; explicit CLI options
+override its values. Relative paths in YAML resolve against the YAML directory.
+The raw dataset path is defined once in `dataset.raw_root`.
+
+```bash
+python scripts/check_dataset.py
+python scripts/prepare_sunnybrook.py
+python scripts/check_dataset.py --require-prepared
+python scripts/train.py --config configs/paper_legacy.yaml
+python scripts/evaluate.py --config configs/paper_legacy.yaml
+python scripts/predict.py --config configs/paper_legacy.yaml  # after setting predict.image
+python -m pytest -q
+```
+
+The dataset checker inventories all five Sunnybrook DICOM batches, manual
+inner/outer contours, and patient metadata. It also decodes every configured
+prepared image/mask pair. The default exit status checks raw availability;
+`--require-prepared` checks training readiness.
+
+The downloaded Sunnybrook data contains DICOM files and contour coordinates,
+not the PNG image/mask pairs expected by the current training loader. Run `python scripts/prepare_sunnybrook.py` to match patient/series identifiers
+and rasterize inner contours as LV cavity masks. Store prepared files under
+`data/sunnybrook/images` and `data/sunnybrook/masks`, or change their config
+globs. Use unique patient-prefixed filenames to prevent pairing collisions.
+
+Tests cover configuration overrides, image/mask loading and binary masks,
+reproducible splits and patient separation, both model architectures, finite
+training gradients, checkpoint prediction round trips, invalid checkpoints,
+and raw dataset inventory. They use temporary fixtures and do not require the
+local medical dataset or pretrained weights.
+
+Dataset checks also save timestamped pre-training artifacts under
+`runs/smoke_test`: image/mask/overlay previews, model architecture, resolved
+configuration, and a JSON report with preprocessing and a CPU forward-pass
+check. Run `python scripts/check_dataset.py --require-prepared` and inspect
+these artifacts before training. See [the training guide](docs/TRAIN.md).

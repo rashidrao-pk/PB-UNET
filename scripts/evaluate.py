@@ -14,7 +14,8 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from portable_bridge_unet.data import Sample, make_loader
 from portable_bridge_unet.evaluation import evaluate_loader
-from portable_bridge_unet.models import build_model
+from portable_bridge_unet.checkpoints import load_checkpoint
+from portable_bridge_unet.config import parse_config_args
 from portable_bridge_unet.utils import resolve_device, save_json
 
 
@@ -28,8 +29,8 @@ def read_split(path: str) -> list[Sample]:
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("--checkpoint", required=True)
-    p.add_argument("--split-csv", required=True)
+    p.add_argument("--checkpoint", default=None, help="Checkpoint path (default: config)")
+    p.add_argument("--split-csv", default=None, help="Split CSV path (default: config)")
     p.add_argument("--batch-size", type=int, default=8)
     p.add_argument("--num-workers", type=int, default=4)
     p.add_argument("--device", default="auto")
@@ -37,18 +38,11 @@ def main() -> None:
     p.add_argument("--postprocess", action="store_true")
     p.add_argument("--no-hd95", action="store_true")
     p.add_argument("--out-dir", default="evaluation")
-    args = p.parse_args()
+    args = parse_config_args(p, "evaluate")
 
     device = resolve_device(args.device)
-    ckpt = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
+    model, ckpt = load_checkpoint(args.checkpoint, device)
     threshold = ckpt.get("threshold", 0.5) if args.threshold is None else args.threshold
-    model = build_model(
-        ckpt["model_name"],
-        in_channels=int(ckpt.get("in_channels", 3)),
-        filters=ckpt.get("filters", [32, 64, 128]),
-    )
-    model.load_state_dict(ckpt["model_state"])
-    model.to(device)
 
     samples = read_split(args.split_csv)
     loader = make_loader(

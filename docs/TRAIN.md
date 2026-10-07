@@ -1,0 +1,74 @@
+# Training
+
+Run commands from the repository root. All dataset paths and experiment settings
+come from YAML; command-line options override individual settings.
+
+Check the downloaded dataset and prepared training pairs:
+
+```bash
+python scripts/check_dataset.py --config configs/paper_legacy.yaml
+python scripts/prepare_sunnybrook.py --config configs/paper_legacy.yaml
+python scripts/check_dataset.py --config configs/paper_legacy.yaml --require-prepared
+```
+
+The configured raw directory is
+`/Users/rashid/data/DS/Healthcare/PB_U-NET/raw`.
+Raw DICOM images and manual contours must be converted into prepared image/mask
+pairs before training. Configure their locations with `dataset.images` and
+`dataset.masks`; the defaults use `data/sunnybrook/images/**/*.png` and
+`data/sunnybrook/masks/**/*.png` under the repository.
+
+Train PB-U-Net:
+
+```bash
+python scripts/train.py --config configs/paper_legacy.yaml
+```
+
+Train the baseline:
+
+```bash
+python scripts/train.py --config configs/baseline.yaml
+```
+
+The configs specify 3 channels, 256×256 input, batch size 8, learning rate
+0.0001, and 100 epochs. Run outputs go to `runs/pb_unet` and `runs/unet`
+respectively. Keep the dataset settings identical in both configs for comparison.
+
+For a quick experiment, override only the settings you need:
+
+```bash
+python scripts/train.py --config configs/paper_legacy.yaml --epochs 1 --device cpu
+```
+
+With no `--config`, the trainer uses `configs/paper_legacy.yaml`.
+Relative YAML paths resolve against the config file's directory; relative CLI
+paths resolve against the current working directory.
+
+Each run saves `best.pt`, `history.json`, resolved arguments in `config.json`,
+and the actual train/validation/test split CSV files.
+
+## Review the smoke test before training
+
+```bash
+python scripts/check_dataset.py --config configs/paper_legacy.yaml --require-prepared
+```
+
+Every dataset check writes a new timestamped folder under `runs/smoke_test`
+(configurable through `smoke_test.out_dir`). Open the generated folder and review:
+
+- `sample_*.png`: image, binary mask, and red mask overlay from left to right.
+- `report.json`: dataset counts, sample shapes/ranges, preprocessing settings,
+  parameter count, model forward-pass result, and any failures.
+- `model_architecture.txt`: the configured architecture.
+- `resolved_config.json`: resolved experiment settings and dataset paths.
+- `README.md`: interpretation and limitations of the check.
+
+The previews use the training resize/normalization code with augmentation
+disabled. The model check uses the configured architecture and image size on
+CPU with random weights. It does not train a model or assess prediction quality.
+The report records the configured training augmentation and split policy.
+`--require-prepared` exits unsuccessfully if data or model checks fail.
+Previous reports are preserved. Missing data still produces a failure report.
+
+Use `configs/baseline.yaml` to check the baseline architecture. Override
+`--num-samples 12` or `--out-dir runs/my_smoke_test` when needed.

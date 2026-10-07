@@ -22,13 +22,14 @@ sys.path.insert(0, str(ROOT / "src"))
 from portable_bridge_unet.data import Sample, make_loader, pair_by_stem, split_samples_legacy
 from portable_bridge_unet.metrics import batch_metrics_from_logits
 from portable_bridge_unet.models import build_model, count_trainable_parameters
+from portable_bridge_unet.config import parse_config_args
 from portable_bridge_unet.utils import resolve_device, save_json, seed_everything
 
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Train baseline or Portable-Bridge U-Net in PyTorch")
-    p.add_argument("--images", required=True, help="Glob for input images")
-    p.add_argument("--masks", required=True, help="Glob for binary masks")
+    p.add_argument("--images", default=None, help="Input image glob (default: dataset.images in config)")
+    p.add_argument("--masks", default=None, help="Binary mask glob (default: dataset.masks in config)")
     p.add_argument("--model", choices=["unet", "portable_bridge"], default="portable_bridge")
     p.add_argument("--epochs", type=int, default=100)
     p.add_argument("--batch-size", type=int, default=8)
@@ -36,6 +37,8 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--image-size", type=int, default=256)
     p.add_argument("--channels", type=int, choices=[1, 3], default=3)
     p.add_argument("--filters", type=int, nargs="+", default=[32, 64, 128])
+    p.add_argument("--val-fraction", type=float, default=0.15)
+    p.add_argument("--test-fraction", type=float, default=0.15)
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--num-workers", type=int, default=4)
     p.add_argument("--device", default="auto", help="auto, cuda, mps, cpu, cuda:0, ...")
@@ -45,7 +48,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--augment", action="store_true")
     p.add_argument("--amp", action=argparse.BooleanOptionalAction, default=True)
     p.add_argument("--out-dir", default="runs/paper_legacy")
-    return p.parse_args()
+    return parse_config_args(p, "train")
 
 
 def write_split(samples: list[Sample], path: Path) -> None:
@@ -107,8 +110,15 @@ def main() -> None:
 
     images = sorted(glob(args.images, recursive=True))
     masks = sorted(glob(args.masks, recursive=True))
+    if not images or not masks:
+        raise SystemExit(
+            "Prepared image/mask files are missing. Run:\n"
+            f"  python scripts/prepare_sunnybrook.py --config {args.config}\n"
+            f"  python scripts/check_dataset.py --config {args.config} --require-prepared\n"
+            "Then rerun training. Raw DICOM files cannot be loaded as PNG pairs."
+        )
     samples = pair_by_stem(images, masks)
-    train_s, val_s, test_s = split_samples_legacy(samples, seed=args.seed)
+    train_s, val_s, test_s = split_samples_legacy(samples, val_fraction=args.val_fraction, test_fraction=args.test_fraction, seed=args.seed)
     write_split(train_s, out / "train_split.csv")
     write_split(val_s, out / "val_split.csv")
     write_split(test_s, out / "test_split.csv")

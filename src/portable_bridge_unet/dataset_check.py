@@ -1,0 +1,31 @@
+"""Read-only inventory of Sunnybrook downloads and prepared training pairs."""
+from pathlib import Path
+from glob import glob
+from .data import pair_by_stem, SegmentationDataset
+
+def check_dataset(config):
+    dataset = config["dataset"]
+    root = Path(dataset["raw_root"])
+    batches = [root / f"SCD_IMAGES_{i:02d}" for i in range(1, 6)]
+    dicom_counts = {p.name: sum(1 for _ in p.rglob("*.dcm")) for p in batches}
+    contours = root / "SCD_ManualContours"
+    inner = sum(1 for _ in contours.rglob("*-icontour-manual.txt"))
+    outer = sum(1 for _ in contours.rglob("*-ocontour-manual.txt"))
+    missing = [str(p) for p in batches if not p.is_dir() or dicom_counts[p.name] == 0]
+    if not inner:
+        missing.append(str(contours / "*-icontour-manual.txt"))
+    if not (root / "scd_patientdata.csv").is_file():
+        missing.append(str(root / "scd_patientdata.csv"))
+    report = dict(raw_root=str(root), raw_available=not missing, missing=missing,
+                  dicom_counts=dicom_counts, inner_contours=inner, outer_contours=outer,
+                  training_ready=False, prepared_pairs=0)
+    try:
+        samples = pair_by_stem(sorted(glob(dataset["images"], recursive=True)),
+                               sorted(glob(dataset["masks"], recursive=True)))
+        ds = SegmentationDataset(samples, config.get("image_size", 256), config.get("channels", 3))
+        for index in range(len(ds)):
+            ds[index]
+        report.update(training_ready=True, prepared_pairs=len(samples))
+    except (ValueError, FileNotFoundError) as exc:
+        report["preparation_issue"] = str(exc)
+    return report

@@ -7,3 +7,4 @@ scipy>=1.10
 tqdm>=4.66
 PyYAML>=6.0
 pytest>=8.0
+pydicom>=3.0

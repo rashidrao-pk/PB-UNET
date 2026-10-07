@@ -23,6 +23,8 @@ def pair_by_stem(images: Sequence[str], masks: Sequence[str]) -> list[Sample]:
     """Pair images and masks by filename stem rather than fragile sorted-index pairing."""
     image_map = {Path(p).stem: str(p) for p in images}
     mask_map = {Path(p).stem: str(p) for p in masks}
+    if len(image_map) != len(images) or len(mask_map) != len(masks):
+        raise ValueError("duplicate filename stems; use unique patient-prefixed filenames")
     common = sorted(image_map.keys() & mask_map.keys())
     if not common:
         raise ValueError("no matching image/mask filename stems found")
