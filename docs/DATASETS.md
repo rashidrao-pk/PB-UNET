@@ -861,3 +861,10 @@ Inspect overlays before using the generated data for publication.
 `manifest.csv` records image/mask paths, patient group, source DICOM, and source
 contour for each pair. Current training retains the configured legacy
 image-level split; the manifest preserves patient IDs for a future grouped run.
+
+## Implemented Kvasir-SEG workflow
+
+See [KVASIR.md](KVASIR.md) for download and complete reproducible commands.
+Use `configs/kvasir_pb.yaml` and `configs/kvasir_unet.yaml`;
+`scripts/prepare_kvasir.py` writes shared split CSVs and a source-checksum
+manifest before training. Smoke previews go to `runs/smoke_test/kvasir_seg`.

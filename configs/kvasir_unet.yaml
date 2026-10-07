@@ -1,0 +1,58 @@
+model: unet
+image_size: 256
+channels: 3
+filters:
+- 32
+- 64
+- 128
+batch_size: 8
+learning_rate: 0.0001
+epochs: 100
+loss: BCEWithLogitsLoss
+optimizer: Adam
+threshold: 0.5
+split:
+  type: image_level_legacy
+  train: 0.7
+  validation: 0.15
+  test: 0.15
+  seed: 42
+postprocessing:
+- hole_filling
+- largest_connected_component
+notes:
+- Kvasir-SEG polyp segmentation; image-level split with seed 42.
+dataset:
+  name: kvasir_seg
+  raw_root: /Users/rashid/data/DS/Healthcare/PB_U-NET/raw/kvasir_seg/Kvasir-SEG
+  prepared_root: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/kvasir_seg
+  images: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/kvasir_seg/images/*.png
+  masks: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/kvasir_seg/masks/*.png
+  expected_pairs: 1000
+  target: Polyp foreground
+  preparation: Decoded RGB preserved; masks thresholded >127; lossless PNG; no resize
+    during preparation
+train:
+  out_dir: ../runs/kvasir_unet
+  num_workers: 4
+  device: auto
+  amp: true
+  augment: false
+  patience: 30
+  lr_factor: 0.05
+  train_split: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/kvasir_seg/metadata/train_split.csv
+  val_split: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/kvasir_seg/metadata/val_split.csv
+  test_split: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/kvasir_seg/metadata/test_split.csv
+evaluate:
+  checkpoint: ../runs/kvasir_unet/best.pt
+  split_csv: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/kvasir_seg/metadata/test_split.csv
+  out_dir: ../runs/kvasir_unet/evaluation
+  device: auto
+predict:
+  image: null
+  checkpoint: ../runs/kvasir_unet/best.pt
+  output: ../runs/kvasir_unet/prediction.png
+  device: auto
+smoke_test:
+  out_dir: ../runs/smoke_test/kvasir_seg
+  num_samples: 6

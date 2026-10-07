@@ -246,3 +246,7 @@ python scripts/bootstrap_comparison.py --config configs/comparison_busi.yaml
 
 Use `configs/comparison_sunnybrook.yaml` for existing Sunnybrook results.
 See [evaluation documentation](docs/EVALUATE.md) for output files and interpretation.
+
+For the next dataset, follow the [Kvasir-SEG guide](docs/KVASIR.md): official
+download, preparation, labeled smoke-test previews, matched baseline/PB-U-Net
+training, evaluation plots, and paired statistical comparisons.
