@@ -31,20 +31,65 @@ python scripts/check_dataset.py --config configs/paper_legacy_epito.yaml
 ```
 
 
-Train PB-U-Net:
+## Train `PB-U-Net`:
+
+```bash
+
+python scripts/train.py \
+  --model portable_bridge \
+  --train-split /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/metadata/train_split.csv \
+  --val-split /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/metadata/val_split.csv \
+  --test-split /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/metadata/test_split.csv \
+  --epochs 1 \
+  --batch-size 8 \
+  --image-size 256 \
+  --channels 3 \
+  --filters 32 64 128 \
+  --lr 0.0001 \
+  --num-workers 4 \
+  --device auto \
+  --out-dir runs/busi_pb_smoke
+
+
+python scripts/train.py \
+  --model portable_bridge \
+  --train-split /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/metadata/train_split.csv \
+  --val-split /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/metadata/val_split.csv \
+  --test-split /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/metadata/test_split.csv \
+  --epochs 100 \
+  --batch-size 8 \
+  --image-size 256 \
+  --channels 3 \
+  --filters 32 64 128 \
+  --lr 0.0001 \
+  --num-workers 4 \
+  --device auto \
+  --patience 30 \
+  --lr-patience 10 \
+  --lr-factor 0.05 \
+  --out-dir runs/busi_pb
+```
+
+### Train the baseline - `UNET`:
 
 ```bash
 python scripts/train.py \
-  --config configs/busi_pb_epito.yaml \
+  --model unet \
   --train-split /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/metadata/train_split.csv \
   --val-split /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/metadata/val_split.csv \
-  --test-split /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/metadata/test_split.csv
-```
-
-Train the baseline:
-
-```bash
-python scripts/train.py --config configs/baseline_epito.yaml
+  --test-split /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/metadata/test_split.csv \
+  --epochs 100 \
+  --batch-size 8 \
+  --image-size 256 \
+  --channels 3 \
+  --filters 32 64 128 \
+  --lr 0.0001 \
+  --num-workers 4 \
+  --device auto \
+  --patience 30 \
+  --lr-patience 10 \
+  --lr-factor 0.05 \
+  --out-dir runs/busi_unet
 ```
 
 ## Evaluate 
