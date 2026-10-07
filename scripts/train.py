@@ -32,9 +32,11 @@ from portable_bridge_unet.metrics import (
 )
 
 from portable_bridge_unet.models import (
+    MODEL_NAMES,
     build_model,
     count_trainable_parameters,
 )
+from portable_bridge_unet.losses import build_loss
 
 from portable_bridge_unet.plotting import plot_training_history
 from portable_bridge_unet.config import (
@@ -98,11 +100,15 @@ def parse_args() -> argparse.Namespace:
 
     p.add_argument(
         "--model",
-        choices=[
-            "unet",
-            "portable_bridge",
-        ],
+        choices=list(MODEL_NAMES),
         default="portable_bridge",
+    )
+
+    p.add_argument(
+        "--loss",
+        choices=["bce", "bce_dice", "dice", "focal", "BCEWithLogitsLoss"],
+        default="bce",
+        help="Training loss. Use bce_dice for revised experiments; use bce for paper-era parity.",
     )
 
     p.add_argument(
@@ -203,7 +209,7 @@ def parse_args() -> argparse.Namespace:
 
     p.add_argument(
         "--augment",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
     )
 
     p.add_argument(
@@ -426,6 +432,8 @@ def build_checkpoint(
 ):
 
     return {
+        "format_version": 2,
+        "loss_name": args.loss,
         "model_state": model.state_dict(),
         "model_name": args.model,
         "in_channels": args.channels,
@@ -456,6 +464,7 @@ def main() -> None:
         parents=True,
         exist_ok=True,
     )
+    save_json(vars(args), out / "config.json")
 
     # =========================================================
     # Dataset / split handling
@@ -622,7 +631,8 @@ def main() -> None:
         f"{count_trainable_parameters(model):,}"
     )
 
-    criterion = nn.BCEWithLogitsLoss()
+    criterion = build_loss(args.loss)
+    print(f"loss={args.loss}")
 
     optimizer = Adam(
         model.parameters(),

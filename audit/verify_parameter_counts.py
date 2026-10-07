@@ -5,14 +5,14 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from portable_bridge_unet.models import BaselineUNet, PortableBridgeUNet, count_trainable_parameters
+from portable_bridge_unet.models import BaselineUNet, PortableBridgeLegacyUNet, count_trainable_parameters
 
 EXPECTED = {
     "BaselineUNet": 1_211_649,
-    "PortableBridgeUNet": 2_356_609,
+    "PortableBridgeLegacyUNet": 2_356_609,
 }
 
-for cls in (BaselineUNet, PortableBridgeUNet):
+for cls in (BaselineUNet, PortableBridgeLegacyUNet):
     model = cls()
     n = count_trainable_parameters(model)
     print(f"{cls.__name__}: {n:,} trainable parameters")

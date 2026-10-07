@@ -24,7 +24,7 @@ notes:
 - Kvasir-SEG polyp segmentation; image-level split with seed 42.
 dataset:
   name: kvasir_seg
-  raw_root: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/raw/kvasir_seg/Kvasir-SEG
+  raw_root: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/Kvasir-SEG/Kvasir-SEG
   prepared_root: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/kvasir_seg
   images: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/kvasir_seg/images/*.png
   masks: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/kvasir_seg/masks/*.png

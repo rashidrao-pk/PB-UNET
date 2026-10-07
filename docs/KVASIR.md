@@ -113,10 +113,13 @@ The unsuffixed configs contain Mac paths. On Epito, explicitly select
 These use the dataset root
 `/beegfs/home/mrashid/datasets/Healthcare/PB_U-NET`.
 
+The cluster configs use the extracted source directory
+`data/Kvasir-SEG/Kvasir-SEG`, containing `images/` and `masks/`.
+Prepared PNGs are written separately to `data/kvasir_seg`.
 Confirm that the extracted image directory exists:
 
 ```bash
-ls /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/raw/kvasir_seg/Kvasir-SEG/images
+ls /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/Kvasir-SEG/Kvasir-SEG/images
 ```
 
 If your archive is elsewhere or extracts to a different enclosing folder,

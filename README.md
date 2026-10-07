@@ -250,3 +250,37 @@ See [evaluation documentation](docs/EVALUATE.md) for output files and interpreta
 For the next dataset, follow the [Kvasir-SEG guide](docs/KVASIR.md): official
 download, preparation, labeled smoke-test previews, matched baseline/PB-U-Net
 training, evaluation plots, and paired statistical comparisons.
+
+## Revised PB-U-Net and architecture benchmark suite
+
+The repository now keeps the exact paper-era model as `portable_bridge_legacy` and adds a revised `portable_bridge` (PB-U-Net-R) with bilinear feature alignment and a final decoder refinement block. An additional `apb_unet` variant adds lightweight channel gating before bridge skip fusion.
+
+Available comparison architectures:
+
+```text
+unet
+portable_bridge_legacy
+portable_bridge
+apb_unet
+unetpp
+attention_unet
+resunet
+resunetpp
+unet3plus
+```
+
+The trainer also supports `--loss bce_dice`, which is recommended for revised segmentation experiments. Use exactly the same loss and split for all architectures in a fair benchmark.
+
+Run the complete Kvasir comparison on Epito:
+
+```bash
+python scripts/run_benchmark.py --config configs/benchmark_kvasir_epito.yaml
+```
+
+BUSI:
+
+```bash
+python scripts/run_benchmark.py --config configs/benchmark_busi_epito.yaml
+```
+
+See `docs/MODEL_COMPARISONS.md` for the experimental protocol and ablation order.
