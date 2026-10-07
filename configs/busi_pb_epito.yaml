@@ -1,0 +1,29 @@
+images: "/beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/lesions/images/*.png"
+masks: "/beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/lesions/masks/*.png"
+
+train_split: "/beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/metadata/train_split.csv"
+val_split: "/beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/metadata/val_split.csv"
+test_split: "/beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/metadata/test_split.csv"
+
+model: portable_bridge
+
+epochs: 100
+batch_size: 8
+lr: 0.0001
+
+image_size: 256
+channels: 3
+
+filters:
+  - 32
+  - 64
+  - 128
+
+seed: 42
+num_workers: 4
+threshold: 0.5
+
+augment: false
+amp: true
+
+out_dir: "runs/busi_pb"

@@ -1,0 +1,54 @@
+model: portable_bridge
+image_size: 256
+channels: 3
+filters: [32, 64, 128]
+batch_size: 8
+learning_rate: 0.0001
+epochs: 100
+loss: BCEWithLogitsLoss
+optimizer: Adam
+threshold: 0.5
+split:
+  type: image_level_legacy
+  train: 0.70
+  validation: 0.15
+  test: 0.15
+  seed: 42
+postprocessing:
+  - hole_filling
+  - largest_connected_component
+notes:
+  - "This reproduces the active implementation rather than the paper's claimed single-channel input."
+  - "For publication reruns, replace image-level splitting with patient/group-level splitting."
+
+dataset:
+  raw_root: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/raw
+  # SC-N-05: series 4 has all 160 annotated cine frames; series 13 has only 140.
+  series_overrides:
+    SCD0003901: unnamed_4
+  prepared_root: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/sunnybrook
+  images: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/sunnybrook/images/**/*.png
+  masks: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/sunnybrook/masks/**/*.png
+train:
+  out_dir: ../runs/pb_unet
+  num_workers: 4
+  device: auto
+  amp: true
+  augment: false
+  patience: 30
+  lr_factor: 0.05
+evaluate:
+  checkpoint: ../runs/pb_unet/best.pt
+  split_csv: ../runs/pb_unet/test_split.csv
+  out_dir: ../runs/pb_unet/evaluation
+  device: auto
+predict:
+  # Set this to a prepared input image before running prediction.
+  image: null
+  checkpoint: ../runs/pb_unet/best.pt
+  output: ../runs/pb_unet/prediction.png
+  device: auto
+
+smoke_test:
+  out_dir: ../runs/smoke_test
+  num_samples: 6
