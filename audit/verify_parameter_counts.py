@@ -1,39 +1,22 @@
 #!/usr/bin/env python3
-"""Static parameter-count check independent of TensorFlow."""
+from pathlib import Path
+import sys
 
-def conv_block(in_ch, out_ch):
-    # two Conv2D layers including bias + two BatchNorm layers (4 params/channel each)
-    return (9*in_ch*out_ch + out_ch + 4*out_ch
-            + 9*out_ch*out_ch + out_ch + 4*out_ch), out_ch
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
 
+from portable_bridge_unet.models import BaselineUNet, PortableBridgeUNet, count_trainable_parameters
 
-def baseline(filters=(32,64,128), in_ch=3):
-    total=0; ch=in_ch; skips=[]
-    for f in filters:
-        p,ch=conv_block(ch,f); total+=p; skips.append(ch)
-    p,ch=conv_block(ch,filters[-1]); total+=p
-    for f,s in zip(filters[::-1],skips[::-1]):
-        ch += s; p,ch=conv_block(ch,f); total+=p
-    return total + ch + 1
+EXPECTED = {
+    "BaselineUNet": 1_211_649,
+    "PortableBridgeUNet": 2_356_609,
+}
 
+for cls in (BaselineUNet, PortableBridgeUNet):
+    model = cls()
+    n = count_trainable_parameters(model)
+    print(f"{cls.__name__}: {n:,} trainable parameters")
+    assert n == EXPECTED[cls.__name__], (cls.__name__, n, EXPECTED[cls.__name__])
 
-def proposed(filters=(32,64,128), in_ch=3):
-    total=0; ch=in_ch; skips=[]
-    for f in filters:
-        p,ch=conv_block(ch,f); total+=p; skips.append(ch)
-    rev=filters[::-1]; sr=skips[::-1]
-    p,ch=conv_block(ch,filters[-1]); total+=p
-    s1=[]
-    for i in range(len(rev)-1):
-        ch += sr[i]; p,ch=conv_block(ch,rev[i]); total+=p; s1.append(ch)
-    s1=s1[::-1]; s2=[]
-    for i in range(len(rev)-1):
-        p,ch=conv_block(ch,rev[i]); total+=p; ch += s1[i]; s2.append(ch)
-    s2=s2[::-1]
-    for i in range(len(rev)-1):
-        ch += s2[i]; p,ch=conv_block(ch,rev[i]); total+=p
-    ch += sr[-1]
-    return total + ch + 1
-
-print('Baseline U-Net total params :', baseline())
-print('Portable-Bridge total params:', proposed())
+print("OK: PyTorch trainable counts exactly match the manuscript/Keras trainable counts.")
+print("Keras 'total' is larger because it also counts BatchNorm running mean/variance as non-trainable values.")

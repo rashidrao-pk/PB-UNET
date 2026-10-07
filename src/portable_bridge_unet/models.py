@@ -1,126 +1,257 @@
-"""Model definitions reconstructed from the original 2022 code.
-
-The two public builders intentionally preserve the architecture used by the paper,
-while avoiding the original in-place ``list.reverse()`` mutation bug.
-"""
 from __future__ import annotations
 
-from typing import Sequence
-import tensorflow as tf
-from tensorflow.keras import Model
-from tensorflow.keras.layers import (
-    Activation, BatchNormalization, Concatenate, Conv2D, Dropout,
-    Input, MaxPool2D, UpSampling2D,
-)
+from dataclasses import dataclass
+from typing import Iterable, Sequence
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 
-def conv_block(x, num_filters: int):
-    x = Conv2D(num_filters, 3, padding="same")(x)
-    x = BatchNormalization()(x)
-    x = Activation("relu")(x)
-    x = Conv2D(num_filters, 3, padding="same")(x)
-    x = BatchNormalization()(x)
-    return Activation("relu")(x)
+class ConvBlock(nn.Module):
+    """Two Conv-BN-ReLU layers, matching the Keras implementation."""
+
+    def __init__(self, in_channels: int, out_channels: int) -> None:
+        super().__init__()
+        self.block = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, bias=True),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1, bias=True),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.block(x)
 
 
-def build_unet(
-    image_size: int = 256,
-    channels: int = 3,
-    filters: Sequence[int] = (32, 64, 128),
-) -> Model:
-    """Baseline U-Net corresponding to original ``model.py``.
+class BaselineUNet(nn.Module):
+    """PyTorch conversion of the original ``model.py`` U-Net.
 
-    With image_size=256, channels=3 and filters=(32,64,128), Keras reports
-    1,213,953 total parameters, matching Table 1 of the manuscript.
+    Defaults correspond to the manuscript implementation: RGB-shaped input and
+    filters (32, 64, 128). The PyTorch trainable parameter count is 1,211,649,
+    equal to the Keras manuscript's *trainable* count. Keras also reports 2,304
+    non-trainable BatchNorm moving-statistic values, yielding 1,213,953 total.
     """
-    filters = list(filters)
-    inputs = Input((image_size, image_size, channels))
-    x = inputs
-    skips = []
-    for f in filters:
-        x = conv_block(x, f)
-        skips.append(x)
-        x = MaxPool2D(2)(x)
 
-    x = conv_block(x, filters[-1])
+    def __init__(
+        self,
+        in_channels: int = 3,
+        out_channels: int = 1,
+        filters: Sequence[int] = (32, 64, 128),
+    ) -> None:
+        super().__init__()
+        if not filters:
+            raise ValueError("filters must not be empty")
+        self.filters = tuple(int(f) for f in filters)
 
-    for f, skip in zip(reversed(filters), reversed(skips)):
-        x = UpSampling2D(2)(x)
-        x = Concatenate()([x, skip])
-        x = conv_block(x, f)
+        encoders = []
+        ch = in_channels
+        for f in self.filters:
+            encoders.append(ConvBlock(ch, f))
+            ch = f
+        self.encoders = nn.ModuleList(encoders)
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
 
-    x = Conv2D(1, 1, padding="same")(x)
-    outputs = Activation("sigmoid")(x)
-    return Model(inputs, outputs, name="baseline_unet")
+        self.bridge = ConvBlock(self.filters[-1], self.filters[-1])
+
+        decoders = []
+        ch = self.filters[-1]
+        for f in reversed(self.filters):
+            # nearest-neighbour UpSampling2D is parameter free; interpolation is
+            # performed in forward. Concatenation adds f skip channels.
+            decoders.append(ConvBlock(ch + f, f))
+            ch = f
+        self.decoders = nn.ModuleList(decoders)
+        self.head = nn.Conv2d(ch, out_channels, kernel_size=1, bias=True)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        skips = []
+        for enc in self.encoders:
+            x = enc(x)
+            skips.append(x)
+            x = self.pool(x)
+
+        x = self.bridge(x)
+
+        for dec, skip in zip(self.decoders, reversed(skips)):
+            x = F.interpolate(x, scale_factor=2, mode="nearest")
+            x = torch.cat([x, skip], dim=1)
+            x = dec(x)
+
+        # Return logits. Use BCEWithLogitsLoss during training and sigmoid only
+        # for metrics/inference; this is numerically safer than embedding sigmoid.
+        return self.head(x)
 
 
-def _portable_bridge(x, reversed_filters, reversed_encoder_skips, n: int = 1):
-    """Portable bridge reconstructed from original ``prop_model.portable_bridge``."""
-    stage1 = []
-    stage2 = []
+class PortableBridge(nn.Module):
+    """Exact structural conversion of ``prop_model.portable_bridge``.
 
-    # In the original code this convolution occurs before num_filters.reverse().
-    x = conv_block(x, reversed_filters[0])
+    For the manuscript's three-level network, this module performs:
+      1. bottleneck ConvBlock at 128 channels;
+      2. two upsample/encoder-fusion blocks (PB1);
+      3. two ConvBlock/PB1-fusion/pool blocks (PB2).
 
-    # PB1: upsample + encoder fusion + convolution.
-    for i in range(len(reversed_filters) - n):
-        x = UpSampling2D(2)(x)
-        x = Concatenate()([x, reversed_encoder_skips[i]])
-        x = conv_block(x, reversed_filters[i])
-        stage1.append(x)
-
-    stage1 = list(reversed(stage1))
-
-    # PB2: convolution + PB1 fusion + downsample.
-    for i in range(len(reversed_filters) - n):
-        x = conv_block(x, reversed_filters[i])
-        x = Concatenate()([x, stage1[i]])
-        stage2.append(x)
-        x = MaxPool2D(2)(x)
-
-    return x, list(reversed(stage2))
-
-
-def build_portable_bridge_unet(
-    image_size: int = 256,
-    channels: int = 3,
-    filters: Sequence[int] = (32, 64, 128),
-    encoder_dropout: float = 0.3,
-    output_dropout: float = 0.1,
-) -> Model:
-    """Portable-Bridge U-Net corresponding to original ``prop_model.py``.
-
-    This function preserves the paper architecture but fixes the original mutable
-    ``num_filters.reverse()`` side effect. For the default configuration Keras
-    reports 2,360,321 parameters, matching Table 1 of the manuscript.
+    The original mutable-list reversal bug is deliberately not reproduced.
     """
-    filters = list(filters)
-    inputs = Input((image_size, image_size, channels))
-    x = inputs
-    encoder_skips = []
 
-    for f in filters:
-        x = conv_block(x, f)
-        encoder_skips.append(x)
-        x = MaxPool2D(2)(x)
-        x = Dropout(encoder_dropout)(x)
+    def __init__(self, filters: Sequence[int]) -> None:
+        super().__init__()
+        filters = tuple(int(f) for f in filters)
+        if len(filters) < 2:
+            raise ValueError("PortableBridge requires at least two filter levels")
+        self.filters = filters
+        rev = tuple(reversed(filters))
+        self.rev_filters = rev
 
-    reversed_filters = list(reversed(filters))
-    reversed_encoder_skips = list(reversed(encoder_skips))
-    x, bridge_skips = _portable_bridge(
-        x, reversed_filters, reversed_encoder_skips, n=1
-    )
+        self.bottleneck = ConvBlock(filters[-1], filters[-1])
 
-    for i in range(len(reversed_filters) - 1):
-        x = UpSampling2D(2)(x)
-        x = Concatenate()([x, bridge_skips[i]])
-        x = conv_block(x, reversed_filters[i])
+        # PB1 channel bookkeeping. Start with bottleneck output filters[-1].
+        pb1 = []
+        ch = filters[-1]
+        # Reversed encoder skips have channels rev[i].
+        for i in range(len(filters) - 1):
+            f = rev[i]
+            skip_ch = rev[i]
+            pb1.append(ConvBlock(ch + skip_ch, f))
+            ch = f
+        self.pb1 = nn.ModuleList(pb1)
 
-    x = UpSampling2D(2)(x)
-    # Original prop_model uses skip_x[-1] after reversing skip_x, i.e. the
-    # shallowest encoder feature map.
-    x = Concatenate()([x, reversed_encoder_skips[-1]])
-    x = Dropout(output_dropout)(x)
-    x = Conv2D(1, 1, padding="same")(x)
-    outputs = Activation("sigmoid")(x)
-    return Model(inputs, outputs, name="portable_bridge_unet")
+        # PB1 features are reversed before PB2 use.
+        # Their channels before reversal are rev[:L-1].
+        pb1_rev_channels = list(reversed(rev[: len(filters) - 1]))
+
+        pb2 = []
+        pb2_fuse_channels = []
+        for i in range(len(filters) - 1):
+            f = rev[i]
+            pb2.append(ConvBlock(ch, f))
+            ch_after_concat = f + pb1_rev_channels[i]
+            pb2_fuse_channels.append(ch_after_concat)
+            ch = ch_after_concat  # pooling does not alter channels
+        self.pb2 = nn.ModuleList(pb2)
+        self.pb2_fuse_channels = tuple(pb2_fuse_channels)
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.out_channels = ch
+
+    def forward(
+        self, x: torch.Tensor, encoder_skips: Sequence[torch.Tensor]
+    ) -> tuple[torch.Tensor, list[torch.Tensor]]:
+        if len(encoder_skips) != len(self.filters):
+            raise ValueError(
+                f"expected {len(self.filters)} encoder skips, got {len(encoder_skips)}"
+            )
+        rev_skips = list(reversed(encoder_skips))
+        x = self.bottleneck(x)
+
+        stage1: list[torch.Tensor] = []
+        for i, block in enumerate(self.pb1):
+            x = F.interpolate(x, scale_factor=2, mode="nearest")
+            x = torch.cat([x, rev_skips[i]], dim=1)
+            x = block(x)
+            stage1.append(x)
+
+        stage1.reverse()
+
+        stage2: list[torch.Tensor] = []
+        for i, block in enumerate(self.pb2):
+            x = block(x)
+            x = torch.cat([x, stage1[i]], dim=1)
+            stage2.append(x)
+            x = self.pool(x)
+
+        stage2.reverse()
+        return x, stage2
+
+
+class PortableBridgeUNet(nn.Module):
+    """PyTorch conversion of the proposed Portable-Bridge U-Net.
+
+    Defaults reproduce the active TensorFlow architecture while fixing the
+    original in-place ``list.reverse()`` side effect. The PyTorch trainable
+    parameter count is 2,356,609, equal to the Keras manuscript's trainable
+    count. Keras additionally counted 3,712 BN moving statistics as
+    non-trainable values, for 2,360,321 total.
+    """
+
+    def __init__(
+        self,
+        in_channels: int = 3,
+        out_channels: int = 1,
+        filters: Sequence[int] = (32, 64, 128),
+        encoder_dropout: float = 0.3,
+        output_dropout: float = 0.1,
+    ) -> None:
+        super().__init__()
+        if len(filters) < 2:
+            raise ValueError("PortableBridgeUNet requires at least two filter levels")
+        self.filters = tuple(int(f) for f in filters)
+
+        encoders = []
+        ch = in_channels
+        for f in self.filters:
+            encoders.append(ConvBlock(ch, f))
+            ch = f
+        self.encoders = nn.ModuleList(encoders)
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.encoder_dropout = nn.Dropout(p=encoder_dropout)
+
+        self.portable_bridge = PortableBridge(self.filters)
+
+        rev = tuple(reversed(self.filters))
+        # stage2 is returned reversed. For the 3-level architecture its channel
+        # dimensions are [192, 192]. Generalize from bridge bookkeeping.
+        bridge_skip_channels = list(reversed(self.portable_bridge.pb2_fuse_channels))
+
+        decoders = []
+        ch = self.portable_bridge.out_channels
+        for i in range(len(self.filters) - 1):
+            f = rev[i]
+            decoders.append(ConvBlock(ch + bridge_skip_channels[i], f))
+            ch = f
+        self.decoders = nn.ModuleList(decoders)
+
+        # Final original decoder step concatenates shallowest encoder feature and
+        # directly applies dropout + 1x1 output convolution (no ConvBlock).
+        shallow_ch = self.filters[0]
+        self.output_dropout = nn.Dropout(p=output_dropout)
+        self.head = nn.Conv2d(ch + shallow_ch, out_channels, kernel_size=1, bias=True)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        encoder_skips: list[torch.Tensor] = []
+        for enc in self.encoders:
+            x = enc(x)
+            encoder_skips.append(x)
+            x = self.pool(x)
+            x = self.encoder_dropout(x)
+
+        x, bridge_skips = self.portable_bridge(x, encoder_skips)
+
+        for i, dec in enumerate(self.decoders):
+            x = F.interpolate(x, scale_factor=2, mode="nearest")
+            x = torch.cat([x, bridge_skips[i]], dim=1)
+            x = dec(x)
+
+        x = F.interpolate(x, scale_factor=2, mode="nearest")
+        x = torch.cat([x, encoder_skips[0]], dim=1)
+        x = self.output_dropout(x)
+        return self.head(x)
+
+
+def build_model(
+    name: str,
+    in_channels: int = 3,
+    out_channels: int = 1,
+    filters: Sequence[int] = (32, 64, 128),
+) -> nn.Module:
+    key = name.lower().replace("-", "_")
+    if key in {"unet", "baseline", "baseline_unet"}:
+        return BaselineUNet(in_channels, out_channels, filters)
+    if key in {"portable_bridge", "portable_bridge_unet", "pb_unet"}:
+        return PortableBridgeUNet(in_channels, out_channels, filters)
+    raise ValueError(f"unknown model: {name}")
+
+
+def count_trainable_parameters(model: nn.Module) -> int:
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)

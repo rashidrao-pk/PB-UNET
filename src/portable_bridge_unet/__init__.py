@@ -1,2 +1,8 @@
-from .models import build_unet, build_portable_bridge_unet
-from .postprocess import fill_holes_keep_largest
+from .models import BaselineUNet, PortableBridgeUNet, build_model, count_trainable_parameters
+
+__all__ = [
+    "BaselineUNet",
+    "PortableBridgeUNet",
+    "build_model",
+    "count_trainable_parameters",
+]

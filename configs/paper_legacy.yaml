@@ -1,16 +1,22 @@
+model: portable_bridge
 image_size: 256
-channels_in_code: 3
+channels: 3
 filters: [32, 64, 128]
-loss: binary_crossentropy
+batch_size: 8
+learning_rate: 0.0001
+epochs: 100
+loss: BCEWithLogitsLoss
 optimizer: Adam
+threshold: 0.5
 split:
-  type: image_level_random
+  type: image_level_legacy
+  train: 0.70
+  validation: 0.15
+  test: 0.15
   seed: 42
-  validation_fraction_of_total: 0.15
-  test_fraction_of_total: 0.15
 postprocessing:
-  - morphological_hole_fill_by_reconstruction
-  - keep_largest_connected_component
+  - hole_filling
+  - largest_connected_component
 notes:
-  - The manuscript text says single-channel input, but the supplied code uses 3 channels.
-  - The legacy dataset split is image-wise, not patient-wise.
+  - "This reproduces the active implementation rather than the paper's claimed single-channel input."
+  - "For publication reruns, replace image-level splitting with patient/group-level splitting."

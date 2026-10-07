@@ -1,74 +1,163 @@
-"""Dataset loading utilities.
-
-Default behavior reproduces the manuscript-era image-level 70/15/15 split.
-For publication-grade re-runs, prefer a patient/group-level split whenever a
-patient identifier is available.
-"""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence, Tuple
+from typing import Callable, Iterable, Sequence
+import random
+
 import cv2
 import numpy as np
-import tensorflow as tf
-from sklearn.model_selection import train_test_split
+import torch
+from sklearn.model_selection import GroupShuffleSplit, train_test_split
+from torch.utils.data import DataLoader, Dataset
 
 
-def split_pairs(images: Sequence[str], masks: Sequence[str], split=0.15, seed=42):
-    """Reproduce the original image-wise split, but split paired records together."""
-    if len(images) != len(masks):
-        raise ValueError(f"images ({len(images)}) and masks ({len(masks)}) differ")
-    pairs = list(zip(images, masks))
-    valid_size = int(split * len(pairs))
-    test_size = int(split * len(pairs))
-    train_pairs, valid_pairs = train_test_split(
-        pairs, test_size=valid_size, random_state=seed
-    )
-    train_pairs, test_pairs = train_test_split(
-        train_pairs, test_size=test_size, random_state=seed
-    )
-    unzip = lambda xs: tuple(map(list, zip(*xs))) if xs else ([], [])
-    return unzip(train_pairs), unzip(valid_pairs), unzip(test_pairs)
+@dataclass(frozen=True)
+class Sample:
+    image: str
+    mask: str
+    group: str | None = None
 
 
-def _read_image(path, image_size=256, channels=3):
-    path = path.decode() if isinstance(path, (bytes, bytearray)) else str(path)
-    flag = cv2.IMREAD_GRAYSCALE if channels == 1 else cv2.IMREAD_COLOR
-    x = cv2.imread(path, flag)
-    if x is None:
-        raise FileNotFoundError(path)
-    x = cv2.resize(x, (image_size, image_size)).astype(np.float32) / 255.0
-    if channels == 1:
-        x = x[..., None]
-    return x
-
-
-def _read_mask(path, image_size=256):
-    path = path.decode() if isinstance(path, (bytes, bytearray)) else str(path)
-    y = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-    if y is None:
-        raise FileNotFoundError(path)
-    y = cv2.resize(y, (image_size, image_size), interpolation=cv2.INTER_NEAREST)
-    y = (y.astype(np.float32) / 255.0)[..., None]
-    return y
-
-
-def make_dataset(images, masks, batch_size=8, image_size=256, channels=3,
-                 shuffle=False, repeat=False, seed=42):
-    def parse(x, y):
-        xi, yi = tf.numpy_function(
-            lambda a, b: (_read_image(a, image_size, channels), _read_mask(b, image_size)),
-            [x, y], [tf.float32, tf.float32]
+def pair_by_stem(images: Sequence[str], masks: Sequence[str]) -> list[Sample]:
+    """Pair images and masks by filename stem rather than fragile sorted-index pairing."""
+    image_map = {Path(p).stem: str(p) for p in images}
+    mask_map = {Path(p).stem: str(p) for p in masks}
+    common = sorted(image_map.keys() & mask_map.keys())
+    if not common:
+        raise ValueError("no matching image/mask filename stems found")
+    missing_i = sorted(mask_map.keys() - image_map.keys())
+    missing_m = sorted(image_map.keys() - mask_map.keys())
+    if missing_i or missing_m:
+        raise ValueError(
+            f"unpaired files: masks_without_images={len(missing_i)}, "
+            f"images_without_masks={len(missing_m)}"
         )
-        xi.set_shape([image_size, image_size, channels])
-        yi.set_shape([image_size, image_size, 1])
-        return xi, yi
+    return [Sample(image_map[k], mask_map[k]) for k in common]
 
-    ds = tf.data.Dataset.from_tensor_slices((list(images), list(masks)))
-    if shuffle:
-        ds = ds.shuffle(len(images), seed=seed, reshuffle_each_iteration=True)
-    ds = ds.map(parse, num_parallel_calls=tf.data.AUTOTUNE)
-    ds = ds.batch(batch_size)
-    if repeat:
-        ds = ds.repeat()
-    return ds.prefetch(tf.data.AUTOTUNE)
+
+def split_samples_legacy(
+    samples: Sequence[Sample], val_fraction: float = 0.15, test_fraction: float = 0.15,
+    seed: int = 42,
+) -> tuple[list[Sample], list[Sample], list[Sample]]:
+    """Reproduce the old image-level split semantics."""
+    samples = list(samples)
+    n_val = int(val_fraction * len(samples))
+    n_test = int(test_fraction * len(samples))
+    train, val = train_test_split(samples, test_size=n_val, random_state=seed)
+    train, test = train_test_split(train, test_size=n_test, random_state=seed)
+    return list(train), list(val), list(test)
+
+
+def split_samples_grouped(
+    samples: Sequence[Sample], val_fraction: float = 0.15, test_fraction: float = 0.15,
+    seed: int = 42,
+) -> tuple[list[Sample], list[Sample], list[Sample]]:
+    """Patient/group-level split; recommended for publication-grade reruns."""
+    samples = list(samples)
+    if any(s.group is None for s in samples):
+        raise ValueError("all samples need a non-null group for grouped splitting")
+    groups = np.asarray([s.group for s in samples])
+    idx = np.arange(len(samples))
+
+    gss_test = GroupShuffleSplit(n_splits=1, test_size=test_fraction, random_state=seed)
+    train_val_idx, test_idx = next(gss_test.split(idx, groups=groups))
+
+    # Choose validation fraction relative to remaining samples.
+    remaining_val_fraction = val_fraction / (1.0 - test_fraction)
+    remaining_groups = groups[train_val_idx]
+    gss_val = GroupShuffleSplit(
+        n_splits=1, test_size=remaining_val_fraction, random_state=seed
+    )
+    train_rel, val_rel = next(
+        gss_val.split(train_val_idx, groups=remaining_groups)
+    )
+    train_idx = train_val_idx[train_rel]
+    val_idx = train_val_idx[val_rel]
+
+    pick = lambda ids: [samples[int(i)] for i in ids]
+    return pick(train_idx), pick(val_idx), pick(test_idx)
+
+
+class SegmentationDataset(Dataset):
+    def __init__(
+        self,
+        samples: Sequence[Sample],
+        image_size: int = 256,
+        channels: int = 3,
+        augment: bool = False,
+    ) -> None:
+        self.samples = list(samples)
+        self.image_size = int(image_size)
+        self.channels = int(channels)
+        self.augment = bool(augment)
+        if self.channels not in (1, 3):
+            raise ValueError("channels must be 1 or 3")
+
+    def __len__(self) -> int:
+        return len(self.samples)
+
+    def _read(self, sample: Sample) -> tuple[np.ndarray, np.ndarray]:
+        flag = cv2.IMREAD_GRAYSCALE if self.channels == 1 else cv2.IMREAD_COLOR
+        image = cv2.imread(sample.image, flag)
+        mask = cv2.imread(sample.mask, cv2.IMREAD_GRAYSCALE)
+        if image is None:
+            raise FileNotFoundError(sample.image)
+        if mask is None:
+            raise FileNotFoundError(sample.mask)
+
+        if self.channels == 3:
+            # OpenCV BGR -> RGB. For grayscale MR stored as RGB this is harmless.
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = cv2.resize(image, (self.image_size, self.image_size), interpolation=cv2.INTER_LINEAR)
+        mask = cv2.resize(mask, (self.image_size, self.image_size), interpolation=cv2.INTER_NEAREST)
+
+        if self.augment:
+            if random.random() < 0.5:
+                image = np.flip(image, axis=1).copy()
+                mask = np.flip(mask, axis=1).copy()
+            if random.random() < 0.5:
+                image = np.flip(image, axis=0).copy()
+                mask = np.flip(mask, axis=0).copy()
+
+        image = image.astype(np.float32) / 255.0
+        mask = (mask.astype(np.float32) / 255.0 > 0.5).astype(np.float32)
+
+        if self.channels == 1:
+            image = image[None, ...]
+        else:
+            image = np.transpose(image, (2, 0, 1))
+        mask = mask[None, ...]
+        return image, mask
+
+    def __getitem__(self, index: int) -> dict[str, object]:
+        sample = self.samples[index]
+        image, mask = self._read(sample)
+        return {
+            "image": torch.from_numpy(image),
+            "mask": torch.from_numpy(mask),
+            "image_path": sample.image,
+            "mask_path": sample.mask,
+            "group": sample.group or "",
+        }
+
+
+def make_loader(
+    samples: Sequence[Sample],
+    batch_size: int,
+    image_size: int = 256,
+    channels: int = 3,
+    shuffle: bool = False,
+    augment: bool = False,
+    num_workers: int = 4,
+    pin_memory: bool = True,
+) -> DataLoader:
+    ds = SegmentationDataset(samples, image_size, channels, augment=augment)
+    return DataLoader(
+        ds,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        persistent_workers=(num_workers > 0),
+    )

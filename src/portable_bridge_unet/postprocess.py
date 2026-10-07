@@ -1,33 +1,30 @@
-"""Post-processing corresponding to the original implementation.
+from __future__ import annotations
 
-The actual legacy code performs morphological hole filling by reconstruction,
-then keeps the largest connected component. It does *not* estimate missing
-pixels from the average contour intensity.
-"""
+import cv2
 import numpy as np
-from skimage.morphology import reconstruction
-from skimage.measure import label, regionprops
 
 
-def fill_holes_keep_largest(mask):
-    mask = np.asarray(mask)
-    if mask.ndim == 3:
-        mask = np.squeeze(mask)
-    mask = (mask > 0).astype(np.uint8)
-    if mask.max() == 0:
-        return np.zeros_like(mask, dtype=np.uint8)
+def fill_holes(binary: np.ndarray) -> np.ndarray:
+    """Fill holes in a binary mask using flood fill."""
+    x = (np.asarray(binary).squeeze() > 0).astype(np.uint8) * 255
+    h, w = x.shape
+    flood = x.copy()
+    mask = np.zeros((h + 2, w + 2), np.uint8)
+    cv2.floodFill(flood, mask, (0, 0), 255)
+    flood_inv = cv2.bitwise_not(flood)
+    return cv2.bitwise_or(x, flood_inv)
 
-    seed = mask.copy()
-    seed[1:-1, 1:-1] = mask.max()
-    filled = reconstruction(seed, mask, method="erosion")
 
-    labeled = label(filled)
-    regions = regionprops(labeled.astype(int))
-    if not regions:
-        return np.zeros_like(mask, dtype=np.uint8)
-    region = max(regions, key=lambda r: r.area)
+def largest_component(binary: np.ndarray) -> np.ndarray:
+    x = (np.asarray(binary).squeeze() > 0).astype(np.uint8)
+    n, labels, stats, _ = cv2.connectedComponentsWithStats(x, connectivity=8)
+    if n <= 1:
+        return x.astype(np.uint8) * 255
+    areas = stats[1:, cv2.CC_STAT_AREA]
+    largest_label = 1 + int(np.argmax(areas))
+    return (labels == largest_label).astype(np.uint8) * 255
 
-    out = np.zeros_like(mask, dtype=np.uint8)
-    minr, minc, maxr, maxc = region.bbox
-    out[minr:maxr, minc:maxc] = region.filled_image.astype(np.uint8)
-    return out
+
+def postprocess(binary: np.ndarray) -> np.ndarray:
+    """Paper-code equivalent: hole filling + largest connected component."""
+    return largest_component(fill_holes(binary))
