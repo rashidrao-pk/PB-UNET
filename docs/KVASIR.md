@@ -106,9 +106,38 @@ Evaluation saves CSV/JSON metrics and PNG/PDF plots. Raw and postprocessed
 outputs have different suffixes. The comparison config selects raw results;
 copy/edit it to compare postprocessed results separately.
 
-## Cluster use
+## Epito cluster use
 
-Copy each experiment YAML and change `dataset.raw_root`,
-`dataset.prepared_root`, `dataset.images`, `dataset.masks`, the three
-`train.*_split` paths, and `evaluate.split_csv` to the cluster dataset location.
-Model/run settings remain in config; no dataset path flags are required.
+The unsuffixed configs contain Mac paths. On Epito, explicitly select
+`configs/kvasir_pb_epito.yaml` or `configs/kvasir_unet_epito.yaml`.
+These use the dataset root
+`/beegfs/home/mrashid/datasets/Healthcare/PB_U-NET`.
+
+Confirm that the extracted image directory exists:
+
+```bash
+ls /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/raw/kvasir_seg/Kvasir-SEG/images
+```
+
+If your archive is elsewhere or extracts to a different enclosing folder,
+change `dataset.raw_root` in both Epito configs to the folder containing
+`images/` and `masks/`. The error alone does not establish whether the
+dataset has been downloaded.
+
+From the repository root:
+
+```bash
+python scripts/prepare_kvasir.py --config configs/kvasir_pb_epito.yaml --dry-run
+python scripts/prepare_kvasir.py --config configs/kvasir_pb_epito.yaml
+python scripts/check_dataset.py --config configs/kvasir_pb_epito.yaml --require-prepared
+python scripts/check_dataset.py --config configs/kvasir_unet_epito.yaml --require-prepared
+python scripts/train.py --config configs/kvasir_pb_epito.yaml
+python scripts/train.py --config configs/kvasir_unet_epito.yaml
+python scripts/evaluate.py --config configs/kvasir_pb_epito.yaml
+python scripts/evaluate.py --config configs/kvasir_unet_epito.yaml
+```
+
+Run `--dry-run` successfully before preparation, then inspect smoke-test
+previews before training. Both Epito configs share the same prepared data and
+split CSVs. The comparison config uses repository-relative run paths and works
+on both machines.

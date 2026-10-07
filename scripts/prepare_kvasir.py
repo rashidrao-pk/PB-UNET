@@ -15,7 +15,7 @@ def main():
     try:
         print(json.dumps(prepare_kvasir(load_config(args.config), args.dry_run), indent=2))
     except (ValueError, OSError) as exc:
-        parser.exit(1, f"Preparation failed: {exc}\nDownload and extract Kvasir-SEG first; see docs/KVASIR.md.\n")
+        parser.exit(1, f"Preparation failed: {exc}\nCheck dataset.raw_root in the selected config and the extracted folder. On Epito use --config configs/kvasir_pb_epito.yaml. See docs/KVASIR.md.\n")
 
 if __name__ == "__main__":
     main()
