@@ -231,3 +231,8 @@ Dataset checks also save timestamped pre-training artifacts under
 configuration, and a JSON report with preprocessing and a CPU forward-pass
 check. Run `python scripts/check_dataset.py --require-prepared` and inspect
 these artifacts before training. See [the training guide](docs/TRAIN.md).
+
+Training saves updated metric curves (`training_curves.png/.pdf`) each epoch.
+Evaluation saves score distributions and summary plots in PNG/PDF, with
+separate raw/postprocessed filenames. To generate plots for existing results,
+run `python scripts/plot_results.py`.

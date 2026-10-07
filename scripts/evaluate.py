@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from portable_bridge_unet.data import Sample, make_loader
 from portable_bridge_unet.evaluation import evaluate_loader
 from portable_bridge_unet.checkpoints import load_checkpoint
+from portable_bridge_unet.plotting import plot_evaluation_metrics
 from portable_bridge_unet.config import parse_config_args
 from portable_bridge_unet.utils import resolve_device, save_json
 
@@ -63,6 +64,7 @@ def main() -> None:
     suffix = "postprocessed" if args.postprocess else "raw"
     df.to_csv(out / f"per_image_{suffix}.csv", index=False)
     save_json(summary, out / f"summary_{suffix}.json")
+    plot_evaluation_metrics(df, out, suffix)
     print(json.dumps(summary, indent=2))
 
 

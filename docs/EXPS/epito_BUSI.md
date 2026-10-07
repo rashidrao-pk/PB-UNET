@@ -2,7 +2,6 @@
 /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/
 ```
 
-
 ```bash
 cd /beegfs/home/mrashid/repos/PB-UNET
 
@@ -29,7 +28,6 @@ python scripts/check_dataset.py --config configs/paper_legacy_epito.yaml
 python scripts/prepare_sunnybrook.py --config configs/paper_legacy_epito.yaml
 python scripts/check_dataset.py --config configs/paper_legacy_epito.yaml
 ```
-
 
 ## Train `PB-U-Net`:
 
@@ -92,14 +90,15 @@ python scripts/train.py \
   --out-dir runs/busi_unet
 ```
 
-## Evaluate 
+## Evaluate
+
 - Run the saved best checkpoint on the full test split:
 
 ```bash
 python scripts/evaluate.py \
-  --checkpoint runs/pb_unet/best.pt \
-  --split-csv runs/pb_unet/test_split.csv \
-  --out-dir runs/pb_unet/evaluation
+  --checkpoint runs/busi_pb/best_dice.pt \
+  --split-csv /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/metadata/test_split.csv \
+  --out-dir runs/busi_pb/evaluation
 ```
 
 - Then run the same checkpoint with post-processing:
@@ -122,6 +121,7 @@ python scripts/evaluate.py \
 ```
 
 #### With Post Processing
+
 ```bash
 python scripts/evaluate.py \
   --checkpoint runs/unet/best.pt \
@@ -129,7 +129,6 @@ python scripts/evaluate.py \
   --postprocess \
   --out-dir runs/unet/evaluation_postprocessed
 ```
-
 
 ## DOWNLOAD BUSI Dataset
 
@@ -148,7 +147,6 @@ print("huggingface_hub:", huggingface_hub.__version__)
 PY
 
 ```
-
 
 ```bash
 python - <<'PY'
@@ -278,7 +276,6 @@ if bad_mask_values:
 PY
 ```
 
-
 ```bash
 python - <<'PY'
 import pandas as pd
@@ -322,7 +319,6 @@ for name, split in [
     print(split["class"].value_counts())
 PY
 ```
-
 
 ```bash
 python - <<'PY'

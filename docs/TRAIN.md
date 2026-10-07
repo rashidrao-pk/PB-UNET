@@ -90,3 +90,19 @@ These configs reference cluster paths under `/beegfs`. For local use, copy the
 config and set `dataset.images` and `dataset.masks` to the local prepared BUSI
 files. Previews reflect the configured PNG masks; they do not establish how
 the source BUSI annotations were prepared.
+
+## Saved training plots
+
+The trainer updates `training_curves.png` and `training_curves.pdf` in the run
+directory after every completed epoch, including an epoch that triggers early
+stopping. Curves show training and validation loss, Dice, IoU, precision,
+recall, accuracy, and learning rate. Numeric values remain in `history.json`.
+
+To create plots for previously completed runs without retraining:
+
+```bash
+python scripts/plot_results.py
+```
+
+This scans `runs/` for saved training histories and evaluation CSVs. Use
+`--runs-dir runs/pb_unet` to restrict it to one run.

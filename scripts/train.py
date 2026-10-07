@@ -36,6 +36,7 @@ from portable_bridge_unet.models import (
     count_trainable_parameters,
 )
 
+from portable_bridge_unet.plotting import plot_training_history
 from portable_bridge_unet.config import (
     parse_config_args,
 )
@@ -797,6 +798,7 @@ def main() -> None:
             history,
             out / "history.json",
         )
+        plot_training_history(history, out)
 
         # -----------------------------------------------------
         # Early stopping

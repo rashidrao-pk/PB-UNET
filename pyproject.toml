@@ -8,6 +8,7 @@ version = "0.2.0"
 description = "PyTorch implementation of Portable-Bridge U-Net for medical image segmentation"
 requires-python = ">=3.10"
 dependencies = [
+  "matplotlib>=3.7",
   "PyYAML>=6.0",
   "pydicom>=3.0",
   "torch>=2.2",

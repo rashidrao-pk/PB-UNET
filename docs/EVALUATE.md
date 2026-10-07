@@ -36,3 +36,24 @@ to override configured paths or settings.
 With no `--config`, both scripts use `configs/paper_legacy.yaml`. Relative YAML
 paths resolve against the config directory; relative CLI paths resolve against
 the current working directory.
+
+## Saved evaluation plots
+
+Evaluation saves these plots next to the per-image CSV and summary JSON, in
+both PNG and PDF formats:
+
+- `metric_distributions_raw.*`: per-image score histograms, plus HD95 in pixels
+  when computed.
+- `metric_summary_raw.*`: mean scores with sample standard deviation and
+  per-image boxplots.
+
+Postprocessed evaluation uses the `_postprocessed` suffix. HD95 is plotted
+separately from scores because it uses distance units. Histogram titles report
+finite and nonfinite counts; nonfinite values cannot be plotted and are
+excluded from chart statistics. Low finite scores are included.
+
+Generate plots from existing evaluation CSVs without evaluating again:
+
+```bash
+python scripts/plot_results.py
+```
