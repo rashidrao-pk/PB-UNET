@@ -1,0 +1,14 @@
+pb_csv: ../runs/external_cvc/portable_bridge_legacy/per_image_raw.csv
+unet_csv: ../runs/external_cvc/unet/per_image_raw.csv
+out_dir: runs/comparisons/cvc_external
+pair_key: image_path
+metrics:
+- dice
+- iou
+- precision
+- recall
+- hd95
+tie_tolerance: 1.0e-08
+bootstrap_metric: dice
+bootstrap_resamples: 10000
+seed: 42
