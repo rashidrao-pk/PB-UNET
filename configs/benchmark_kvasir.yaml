@@ -1,0 +1,41 @@
+models:
+- unet
+- portable_bridge_legacy
+- portable_bridge
+- apb_unet
+- unetpp
+- attention_unet
+- resunet
+- resunetpp
+- unet3plus
+splits:
+  train: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/kvasir_seg/metadata/train_split.csv
+  val: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/kvasir_seg/metadata/val_split.csv
+  test: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/kvasir_seg/metadata/test_split.csv
+out_root: ../runs/benchmark_kvasir
+training:
+  epochs: 100
+  batch_size: 8
+  image_size: 256
+  channels: 3
+  filters:
+  - 32
+  - 64
+  - 128
+  lr: 0.0001
+  loss: bce_dice
+  num_workers: 4
+  device: auto
+  patience: 30
+  lr_patience: 10
+  lr_factor: 0.05
+  threshold: 0.5
+  augment: false
+  amp: true
+  seed: 42
+  deterministic: true
+postprocess: false
+bootstrap_resamples: 10000
+seed: 42
+dataset: kvasir_seg
+split_unit: image

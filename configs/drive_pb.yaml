@@ -1,0 +1,59 @@
+model: portable_bridge
+image_size: 256
+channels: 3
+filters:
+- 32
+- 64
+- 128
+batch_size: 8
+learning_rate: 0.0001
+epochs: 100
+loss: bce_dice
+threshold: 0.5
+split:
+  type: official_test_training_holdout
+  validation: 0.2
+  seed: 42
+postprocessing: []
+dataset:
+  name: drive
+  raw_root: /Users/rashid/data/DS/Healthcare/PB_U-NET/raw/drive/DRIVE
+  prepared_root: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/drive
+  images: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/drive/images/*.png
+  masks: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/drive/masks/*.png
+  target: Retinal blood vessels
+  preparation: RGB retained; first manual vessel mask intersected with FOV
+  expected_training_pairs: 20
+  expected_test_pairs: 20
+  expected_pairs: 40
+train:
+  out_dir: ../runs/drive_pb
+  num_workers: 4
+  device: auto
+  amp: true
+  augment: false
+  patience: 30
+  lr_patience: 10
+  lr_factor: 0.05
+  train_split: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/drive/metadata/train_split.csv
+  val_split: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/drive/metadata/val_split.csv
+  test_split: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/drive/metadata/test_split.csv
+  deterministic: true
+evaluate:
+  checkpoint: ../runs/drive_pb/best_dice.pt
+  split_csv: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/drive/metadata/test_split.csv
+  out_dir: ../runs/drive_pb/evaluation
+  device: auto
+  postprocess: false
+predict:
+  image: null
+  checkpoint: ../runs/drive_pb/best_dice.pt
+  output: ../runs/drive_pb/prediction.png
+  device: auto
+  postprocess: false
+smoke_test:
+  out_dir: ../runs/smoke_test/drive
+  num_samples: 6
+notes:
+- Official DRIVE test preserved; metrics within FOV; full-image training loss; no
+  largest-component filtering.

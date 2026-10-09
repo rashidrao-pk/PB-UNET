@@ -10,3 +10,11 @@ def test_postprocess_keeps_largest_and_fills_hole():
     y = postprocess(x)
     assert y[10, 10] == 255
     assert y[26, 26] == 0
+
+
+def test_hole_fill_with_foreground_at_upper_left():
+    from portable_bridge_unet.postprocess import fill_holes
+    x=np.zeros((16,16),np.uint8);x[:8,:8]=255;x[2:4,2:4]=0
+    y=fill_holes(x)
+    assert y[2,2]==255 and y[15,15]==0
+    assert (y>0).sum()==64

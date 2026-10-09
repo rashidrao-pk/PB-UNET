@@ -1,0 +1,300 @@
+{
+  "sunnybrook": {
+    "role": "train",
+    "experiment": "/Users/rashid/data/others/mehreen/PB-UNET/configs/sunnybrook_pb.yaml",
+    "benchmark": "/Users/rashid/data/others/mehreen/PB-UNET/configs/benchmark_sunnybrook.yaml",
+    "multiseed": "/Users/rashid/data/others/mehreen/PB-UNET/configs/multiseed_sunnybrook.yaml",
+    "models": [
+      "unet",
+      "portable_bridge_legacy",
+      "portable_bridge",
+      "apb_unet",
+      "unetpp",
+      "attention_unet",
+      "resunet",
+      "resunetpp",
+      "unet3plus"
+    ],
+    "splits": {
+      "train": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/sunnybrook/metadata/train_split.csv",
+        "available": false
+      },
+      "val": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/sunnybrook/metadata/val_split.csv",
+        "available": false
+      },
+      "test": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/sunnybrook/metadata/test_split.csv",
+        "available": false
+      }
+    },
+    "standard_run_evaluations_found": 0,
+    "suite_evaluations_found": 0,
+    "completed_results_verified": false
+  },
+  "busi": {
+    "role": "train",
+    "experiment": "/Users/rashid/data/others/mehreen/PB-UNET/configs/busi_pb.yaml",
+    "benchmark": "/Users/rashid/data/others/mehreen/PB-UNET/configs/benchmark_busi.yaml",
+    "multiseed": "/Users/rashid/data/others/mehreen/PB-UNET/configs/multiseed_busi.yaml",
+    "models": [
+      "unet",
+      "portable_bridge_legacy",
+      "portable_bridge",
+      "apb_unet",
+      "unetpp",
+      "attention_unet",
+      "resunet",
+      "resunetpp",
+      "unet3plus"
+    ],
+    "splits": {
+      "train": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/BUSI/metadata/train_split.csv",
+        "available": false
+      },
+      "val": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/BUSI/metadata/val_split.csv",
+        "available": false
+      },
+      "test": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/BUSI/metadata/test_split.csv",
+        "available": false
+      }
+    },
+    "standard_run_evaluations_found": 0,
+    "suite_evaluations_found": 0,
+    "completed_results_verified": false
+  },
+  "kvasir_seg": {
+    "role": "train",
+    "experiment": "/Users/rashid/data/others/mehreen/PB-UNET/configs/kvasir_pb.yaml",
+    "benchmark": "/Users/rashid/data/others/mehreen/PB-UNET/configs/benchmark_kvasir.yaml",
+    "multiseed": "/Users/rashid/data/others/mehreen/PB-UNET/configs/multiseed_kvasir.yaml",
+    "models": [
+      "unet",
+      "portable_bridge_legacy",
+      "portable_bridge",
+      "apb_unet",
+      "unetpp",
+      "attention_unet",
+      "resunet",
+      "resunetpp",
+      "unet3plus"
+    ],
+    "splits": {
+      "train": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/kvasir_seg/metadata/train_split.csv",
+        "available": false
+      },
+      "val": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/kvasir_seg/metadata/val_split.csv",
+        "available": false
+      },
+      "test": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/kvasir_seg/metadata/test_split.csv",
+        "available": false
+      }
+    },
+    "standard_run_evaluations_found": 0,
+    "suite_evaluations_found": 0,
+    "completed_results_verified": false
+  },
+  "montgomery": {
+    "role": "train",
+    "experiment": "/Users/rashid/data/others/mehreen/PB-UNET/configs/montgomery_pb.yaml",
+    "benchmark": "/Users/rashid/data/others/mehreen/PB-UNET/configs/benchmark_montgomery.yaml",
+    "multiseed": "/Users/rashid/data/others/mehreen/PB-UNET/configs/multiseed_montgomery.yaml",
+    "models": [
+      "unet",
+      "portable_bridge_legacy",
+      "portable_bridge",
+      "apb_unet",
+      "unetpp",
+      "attention_unet",
+      "resunet",
+      "resunetpp",
+      "unet3plus"
+    ],
+    "splits": {
+      "train": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/montgomery/metadata/train_split.csv",
+        "available": false
+      },
+      "val": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/montgomery/metadata/val_split.csv",
+        "available": false
+      },
+      "test": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/montgomery/metadata/test_split.csv",
+        "available": false
+      }
+    },
+    "standard_run_evaluations_found": 0,
+    "suite_evaluations_found": 0,
+    "completed_results_verified": false
+  },
+  "isic2016": {
+    "role": "train",
+    "experiment": "/Users/rashid/data/others/mehreen/PB-UNET/configs/isic2016_pb.yaml",
+    "benchmark": "/Users/rashid/data/others/mehreen/PB-UNET/configs/benchmark_isic2016.yaml",
+    "multiseed": "/Users/rashid/data/others/mehreen/PB-UNET/configs/multiseed_isic2016.yaml",
+    "models": [
+      "unet",
+      "portable_bridge_legacy",
+      "portable_bridge",
+      "apb_unet",
+      "unetpp",
+      "attention_unet",
+      "resunet",
+      "resunetpp",
+      "unet3plus"
+    ],
+    "splits": {
+      "train": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/isic2016/metadata/train_split.csv",
+        "available": false
+      },
+      "val": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/isic2016/metadata/val_split.csv",
+        "available": false
+      },
+      "test": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/isic2016/metadata/test_split.csv",
+        "available": false
+      }
+    },
+    "standard_run_evaluations_found": 0,
+    "suite_evaluations_found": 0,
+    "completed_results_verified": false
+  },
+  "brats2020": {
+    "role": "train",
+    "experiment": "/Users/rashid/data/others/mehreen/PB-UNET/configs/brats2020_pb.yaml",
+    "benchmark": "/Users/rashid/data/others/mehreen/PB-UNET/configs/benchmark_brats2020.yaml",
+    "multiseed": "/Users/rashid/data/others/mehreen/PB-UNET/configs/multiseed_brats2020.yaml",
+    "models": [
+      "unet",
+      "portable_bridge_legacy",
+      "portable_bridge",
+      "apb_unet",
+      "unetpp",
+      "attention_unet",
+      "resunet",
+      "resunetpp",
+      "unet3plus"
+    ],
+    "splits": {
+      "train": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/brats2020/metadata/train_split.csv",
+        "available": false
+      },
+      "val": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/brats2020/metadata/val_split.csv",
+        "available": false
+      },
+      "test": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/brats2020/metadata/test_split.csv",
+        "available": false
+      }
+    },
+    "standard_run_evaluations_found": 0,
+    "suite_evaluations_found": 0,
+    "completed_results_verified": false
+  },
+  "brats2021": {
+    "role": "train",
+    "experiment": "/Users/rashid/data/others/mehreen/PB-UNET/configs/brats2021_pb.yaml",
+    "benchmark": "/Users/rashid/data/others/mehreen/PB-UNET/configs/benchmark_brats2021.yaml",
+    "multiseed": "/Users/rashid/data/others/mehreen/PB-UNET/configs/multiseed_brats2021.yaml",
+    "models": [
+      "unet",
+      "portable_bridge_legacy",
+      "portable_bridge",
+      "apb_unet",
+      "unetpp",
+      "attention_unet",
+      "resunet",
+      "resunetpp",
+      "unet3plus"
+    ],
+    "splits": {
+      "train": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/brats2021/metadata/train_split.csv",
+        "available": false
+      },
+      "val": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/brats2021/metadata/val_split.csv",
+        "available": false
+      },
+      "test": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/brats2021/metadata/test_split.csv",
+        "available": false
+      }
+    },
+    "standard_run_evaluations_found": 0,
+    "suite_evaluations_found": 0,
+    "completed_results_verified": false
+  },
+  "drive": {
+    "role": "train",
+    "experiment": "/Users/rashid/data/others/mehreen/PB-UNET/configs/drive_pb.yaml",
+    "benchmark": "/Users/rashid/data/others/mehreen/PB-UNET/configs/benchmark_drive.yaml",
+    "multiseed": "/Users/rashid/data/others/mehreen/PB-UNET/configs/multiseed_drive.yaml",
+    "models": [
+      "unet",
+      "portable_bridge_legacy",
+      "portable_bridge",
+      "apb_unet",
+      "unetpp",
+      "attention_unet",
+      "resunet",
+      "resunetpp",
+      "unet3plus"
+    ],
+    "splits": {
+      "train": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/drive/metadata/train_split.csv",
+        "available": false
+      },
+      "val": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/drive/metadata/val_split.csv",
+        "available": false
+      },
+      "test": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/drive/metadata/test_split.csv",
+        "available": false
+      }
+    },
+    "standard_run_evaluations_found": 0,
+    "suite_evaluations_found": 0,
+    "completed_results_verified": false
+  },
+  "cvc_clinicdb": {
+    "role": "external",
+    "experiment": "/Users/rashid/data/others/mehreen/PB-UNET/configs/cvc_clinicdb_external.yaml",
+    "benchmark": "/Users/rashid/data/others/mehreen/PB-UNET/configs/benchmark_cvc_external.yaml",
+    "multiseed": null,
+    "models": [
+      "unet",
+      "portable_bridge_legacy",
+      "portable_bridge",
+      "apb_unet",
+      "unetpp",
+      "attention_unet",
+      "resunet",
+      "resunetpp",
+      "unet3plus"
+    ],
+    "splits": {
+      "test": {
+        "path": "/Users/rashid/data/DS/Healthcare/PB_U-NET/data/cvc_clinicdb/metadata/test_split.csv",
+        "available": false
+      }
+    },
+    "standard_run_evaluations_found": 0,
+    "suite_evaluations_found": 0,
+    "completed_results_verified": false
+  }
+}

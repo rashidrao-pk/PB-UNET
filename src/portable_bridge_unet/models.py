@@ -241,7 +241,7 @@ class PortableBridgeLegacyUNet(nn.Module):
 class PortableBridgeUNet(nn.Module):
     """PB-U-Net-R: bilinear bridge/decoder alignment plus a final refinement block."""
 
-    def __init__(self, in_channels=3, out_channels=1, filters: Sequence[int] = (32, 64, 128), encoder_dropout=0.3, output_dropout=0.1, gated=False) -> None:
+    def __init__(self, in_channels=3, out_channels=1, filters: Sequence[int] = (32, 64, 128), encoder_dropout=0.3, output_dropout=0.1, gated=False, decoder_mode="bilinear", spatial_encoder_dropout=True) -> None:
         super().__init__()
         self.filters = tuple(map(int, filters))
         encoders, ch = [], in_channels
@@ -249,7 +249,8 @@ class PortableBridgeUNet(nn.Module):
             encoders.append(ConvBlock(ch, f)); ch = f
         self.encoders = nn.ModuleList(encoders)
         self.pool = nn.MaxPool2d(2)
-        self.encoder_dropout = nn.Dropout2d(encoder_dropout)
+        self.decoder_mode = decoder_mode
+        self.encoder_dropout = (nn.Dropout2d if spatial_encoder_dropout else nn.Dropout)(encoder_dropout)
         self.portable_bridge = PortableBridge(self.filters, up_mode="bilinear", gated=gated)
         rev = tuple(reversed(self.filters))
         bridge_skip_channels = list(reversed(self.portable_bridge.pb2_fuse_channels))
@@ -268,7 +269,7 @@ class PortableBridgeUNet(nn.Module):
             x = enc(x); skips.append(x); x = self.encoder_dropout(self.pool(x))
         x, bridge_skips = self.portable_bridge(x, skips)
         for i, dec in enumerate(self.decoders):
-            x = upsample(x, mode="bilinear")
+            x = upsample(x, mode=self.decoder_mode)
             x = dec(torch.cat([x, bridge_skips[i]], dim=1))
         x = upsample(x, mode="bilinear")
         x = self.final_refine(torch.cat([x, skips[0]], dim=1))

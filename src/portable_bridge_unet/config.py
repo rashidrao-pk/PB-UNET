@@ -178,10 +178,7 @@ def parse_config_args(
             }
         )
 
-        defaults["lr"] = config.get(
-            "learning_rate",
-            1e-4,
-        )
+        defaults["lr"] = config.get("learning_rate", config.get("lr", 1e-4))
 
         defaults["val_fraction"] = (
             config.get(
@@ -209,9 +206,12 @@ def parse_config_args(
                 {},
             ).get(
                 "seed",
-                42,
+                config.get("seed", 42),
             )
         )
+
+    if section == "train":
+        defaults.update(config["train"])
 
     destinations = {
         action.dest

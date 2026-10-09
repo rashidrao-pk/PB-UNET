@@ -1,0 +1,59 @@
+batch_size: 8
+channels: 1
+dataset:
+  name: sunnybrook
+  prepared_root: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/sunnybrook
+  images: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/sunnybrook/images/**/*.png
+  masks: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/sunnybrook/masks/**/*.png
+  target: LV cavity
+  preparation: DICOM rescale; per-frame minmax uint8; rasterized inner contour
+  raw_root: /Users/rashid/data/DS/Healthcare/PB_U-NET/raw
+  series_overrides:
+    SCD0003901: unnamed_4
+epochs: 100
+evaluate:
+  checkpoint: ../runs/sunnybrook_pb/best_dice.pt
+  device: auto
+  out_dir: ../runs/sunnybrook_pb/evaluation
+  postprocess: false
+  split_csv: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/sunnybrook/metadata/test_split.csv
+filters:
+- 32
+- 64
+- 128
+image_size: 256
+learning_rate: 0.0001
+loss: bce_dice
+model: portable_bridge
+notes:
+- Patient-grouped grayscale experiment; separate from historical image-level Sunnybrook
+  reproduction.
+postprocessing: []
+predict:
+  checkpoint: ../runs/sunnybrook_pb/best_dice.pt
+  device: auto
+  image: null
+  output: ../runs/sunnybrook_pb/prediction.png
+  postprocess: false
+smoke_test:
+  num_samples: 6
+  out_dir: ../runs/smoke_test/sunnybrook
+split:
+  type: patient_grouped
+  validation: 0.15
+  test: 0.15
+  seed: 42
+threshold: 0.5
+train:
+  amp: true
+  augment: false
+  device: auto
+  lr_factor: 0.05
+  lr_patience: 10
+  num_workers: 4
+  out_dir: ../runs/sunnybrook_pb
+  patience: 30
+  test_split: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/sunnybrook/metadata/test_split.csv
+  train_split: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/sunnybrook/metadata/train_split.csv
+  val_split: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/sunnybrook/metadata/val_split.csv
+  deterministic: true

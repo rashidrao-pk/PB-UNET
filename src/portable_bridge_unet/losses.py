@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -10,10 +11,12 @@ class DiceLoss(nn.Module):
 
     def __init__(self, smooth: float = 1.0) -> None:
         super().__init__()
+        if not math.isfinite(smooth) or smooth <= 0:
+            raise ValueError("smooth must be finite and positive")
         self.smooth = float(smooth)
 
     def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        probs = torch.sigmoid(logits)
+        probs, targets = torch.sigmoid(logits.float()), targets.float()
         dims = tuple(range(1, probs.ndim))
         intersection = (probs * targets).sum(dim=dims)
         denominator = probs.sum(dim=dims) + targets.sum(dim=dims)
@@ -27,7 +30,7 @@ class BCEDiceLoss(nn.Module):
     def __init__(self, bce_weight: float = 0.5, dice_weight: float = 0.5) -> None:
         super().__init__()
         total = float(bce_weight) + float(dice_weight)
-        if total <= 0:
+        if any(not math.isfinite(w) or w < 0 for w in (bce_weight, dice_weight)) or total <= 0:
             raise ValueError("bce_weight + dice_weight must be > 0")
         self.bce_weight = float(bce_weight) / total
         self.dice_weight = float(dice_weight) / total

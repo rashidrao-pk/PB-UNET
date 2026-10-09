@@ -1,0 +1,15 @@
+models:
+- unet
+- portable_bridge_legacy
+- portable_bridge
+- apb_unet
+- unetpp
+- attention_unet
+- resunet
+- resunetpp
+- unet3plus
+split_csv: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/cvc_clinicdb/metadata/test_split.csv
+source_root: ../runs/benchmark_kvasir
+out_root: ../runs/external_cvc
+device: auto
+num_workers: 4

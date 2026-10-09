@@ -51,7 +51,7 @@ Then create a comparison config or point `compare_models.py` to these two per-im
 ## 2. Three-seed Kvasir experiment
 
 ```bash
-python scripts/run_multiseed.py --config configs/multiseed_kvasir.yaml
+python scripts/run_multiseed.py --config configs/multiseed_kvasir_epito.yaml
 ```
 
 Outputs:
@@ -106,3 +106,7 @@ This creates:
 - `selected_cases.csv`
 
 The cases are selected algorithmically from paired Dice differences, reducing manual cherry-picking.
+
+## Unified suite
+
+See [BENCHMARKS.md](BENCHMARKS.md) for all-dataset single/multi-seed execution, preparation preflight and source-checkpoint external evaluation. CVC can now be prepared with `--config configs/cvc_clinicdb_external_epito.yaml`.

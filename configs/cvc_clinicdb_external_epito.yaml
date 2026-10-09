@@ -1,0 +1,22 @@
+model: portable_bridge
+channels: 3
+image_size: 256
+filters:
+- 32
+- 64
+- 128
+dataset:
+  name: cvc_clinicdb
+  raw_root: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/CVC-ClinicDB/raw
+  prepared_root: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/cvc_clinicdb
+  images: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/cvc_clinicdb/images/*.png
+  masks: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/cvc_clinicdb/masks/*.png
+  expected_pairs: 612
+  target: polyp foreground
+  preparation: RGB and binary masks retained; external test only
+train: {}
+evaluate:
+  split_csv: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/cvc_clinicdb/metadata/test_split.csv
+smoke_test:
+  out_dir: ../runs/smoke_test/cvc_clinicdb
+  num_samples: 6

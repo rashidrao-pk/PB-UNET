@@ -106,3 +106,7 @@ python scripts/plot_results.py
 
 This scans `runs/` for saved training histories and evaluation CSVs. Use
 `--runs-dir runs/pb_unet` to restrict it to one run.
+
+## All-dataset benchmarks
+
+See [BENCHMARKS.md](BENCHMARKS.md) for dataset coverage, fixed split validation, multi-seed runs and one-command suite orchestration. Existing training checkpoint/history directories are protected; use a new output directory or skip training when evaluating an existing run.

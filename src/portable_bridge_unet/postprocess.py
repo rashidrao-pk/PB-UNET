@@ -7,12 +7,13 @@ import numpy as np
 def fill_holes(binary: np.ndarray) -> np.ndarray:
     """Fill holes in a binary mask using flood fill."""
     x = (np.asarray(binary).squeeze() > 0).astype(np.uint8) * 255
-    h, w = x.shape
-    flood = x.copy()
-    mask = np.zeros((h + 2, w + 2), np.uint8)
-    cv2.floodFill(flood, mask, (0, 0), 255)
-    flood_inv = cv2.bitwise_not(flood)
-    return cv2.bitwise_or(x, flood_inv)
+    padded = cv2.copyMakeBorder(x,1,1,1,1,cv2.BORDER_CONSTANT,value=0)
+    h,w=padded.shape
+    flood=padded.copy()
+    mask=np.zeros((h+2,w+2),np.uint8)
+    cv2.floodFill(flood,mask,(0,0),255)
+    return cv2.bitwise_or(padded,cv2.bitwise_not(flood))[1:-1,1:-1]
+
 
 
 def largest_component(binary: np.ndarray) -> np.ndarray:

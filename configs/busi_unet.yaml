@@ -1,0 +1,56 @@
+batch_size: 8
+channels: 3
+dataset:
+  name: busi
+  prepared_root: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/BUSI
+  images: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/BUSI/lesions/images/**/*.png
+  masks: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/BUSI/lesions/masks/**/*.png
+  target: Breast lesion foreground
+  preparation: Existing prepared BUSI lesion pairs; retain the source preparation
+    protocol
+epochs: 100
+evaluate:
+  checkpoint: ../runs/busi_unet/best_dice.pt
+  device: auto
+  out_dir: ../runs/busi_unet/evaluation
+  postprocess: false
+  split_csv: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/BUSI/metadata/test_split.csv
+filters:
+- 32
+- 64
+- 128
+image_size: 256
+learning_rate: 0.0001
+loss: bce_dice
+model: unet
+notes:
+- Uses existing BUSI lesion split CSVs; patient independence requires source metadata.
+postprocessing: []
+predict:
+  checkpoint: ../runs/busi_unet/best_dice.pt
+  device: auto
+  image: null
+  output: ../runs/busi_unet/prediction.png
+  postprocess: false
+smoke_test:
+  num_samples: 6
+  out_dir: ../runs/smoke_test/busi
+split:
+  type: prepared_explicit
+  validation: 0.15
+  test: 0.15
+  seed: 42
+threshold: 0.5
+train:
+  amp: true
+  augment: false
+  device: auto
+  lr_factor: 0.05
+  lr_patience: 10
+  num_workers: 4
+  out_dir: ../runs/busi_unet
+  patience: 30
+  test_split: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/BUSI/metadata/test_split.csv
+  train_split: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/BUSI/metadata/train_split.csv
+  val_split: /Users/rashid/data/DS/Healthcare/PB_U-NET/data/BUSI/metadata/val_split.csv
+  deterministic: true

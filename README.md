@@ -295,3 +295,14 @@ The repository now includes the remaining experiments for the cross-domain PB-U-
 - `scripts/select_qualitative_cases.py` — reproducibly select PB wins, comparable cases and PB failures.
 - `paper/main.tex` + `paper/references.bib` — working LaTeX manuscript.
 - `docs/NEXT_EXPERIMENTS.md` — exact Epito commands.
+
+## Dataset-wide experiment suite
+
+All eight training datasets now have PB/U-Net, nine-model benchmark and three-seed configs for local/Epito paths; CVC-ClinicDB is an external Kvasir-transfer evaluation. See [full-suite commands and readiness checks](docs/BENCHMARKS.md) and [the settings audit](audit/EXPERIMENT_SETTINGS.md). Configured settings do not imply completed experiments.
+
+```bash
+python scripts/run_all_datasets.py --config configs/benchmark_all_epito.yaml --dry-run
+python scripts/run_all_datasets.py --config configs/benchmark_all_epito.yaml --check-only
+python scripts/run_all_datasets.py --config configs/benchmark_all_epito.yaml
+python scripts/run_all_datasets.py --config configs/benchmark_all_epito.yaml --mode multiseed
+```

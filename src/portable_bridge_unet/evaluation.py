@@ -28,15 +28,19 @@ def evaluate_loader(
         images = batch["image"].to(device, non_blocking=True)
         targets = batch["mask"].to(device, non_blocking=True)
         logits = model(images)
+        roi = batch.get("roi", torch.ones_like(targets)).to(device)
 
         if not apply_postprocessing:
-            per_batch = batch_metrics_from_logits(logits, targets, threshold)
+            per_batch = batch_metrics_from_logits(logits, targets, threshold, roi=roi)
             probs = torch.sigmoid(logits)
-            preds = (probs >= threshold).float()
+            preds = (probs >= threshold).float() * roi
+            targets = targets * roi
             for i in range(images.shape[0]):
                 row: dict[str, object] = {
                     "image_path": batch["image_path"][i],
                     "mask_path": batch["mask_path"][i],
+                    "group": batch.get("group", [""] * images.shape[0])[i],
+                    "evaluation_domain": "field_of_view" if batch.get("roi_path", [""] * images.shape[0])[i] else "full_image",
                 }
                 for k, vals in per_batch.items():
                     row[k] = float(vals[i].cpu())
@@ -50,15 +54,19 @@ def evaluate_loader(
             gt = targets.cpu().numpy()
             for i in range(images.shape[0]):
                 raw = (probs[i, 0] >= threshold).astype(np.uint8) * 255
-                pp = (postprocess(raw) > 0).astype(np.float32)
+                domain = roi[i, 0].cpu().numpy()
+                pp = (postprocess(raw) > 0).astype(np.float32) * domain
+                gt[i, 0] *= domain
                 pred_t = torch.from_numpy(pp)[None, None]
                 target_t = torch.from_numpy(gt[i, 0])[None, None]
                 # Convert postprocessed binary prediction into confident logits.
                 pseudo_logits = torch.where(pred_t > 0.5, torch.tensor(20.0), torch.tensor(-20.0))
-                vals = batch_metrics_from_logits(pseudo_logits, target_t, threshold=0.5)
+                vals = batch_metrics_from_logits(pseudo_logits, target_t, threshold=0.5, roi=roi[i:i+1].cpu())
                 row = {
                     "image_path": batch["image_path"][i],
                     "mask_path": batch["mask_path"][i],
+                    "group": batch.get("group", [""] * images.shape[0])[i],
+                    "evaluation_domain": "field_of_view" if batch.get("roi_path", [""] * images.shape[0])[i] else "full_image",
                 }
                 for k, v in vals.items():
                     row[k] = float(v[0])

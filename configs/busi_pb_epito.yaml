@@ -1,39 +1,56 @@
-images: "/beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/lesions/images/*.png"
-masks: "/beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/lesions/masks/*.png"
-
-train_split: "/beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/metadata/train_split.csv"
-val_split: "/beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/metadata/val_split.csv"
-test_split: "/beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/metadata/test_split.csv"
-
-model: portable_bridge
-
-epochs: 100
 batch_size: 8
-lr: 0.0001
-
-image_size: 256
 channels: 3
-
-filters:
-  - 32
-  - 64
-  - 128
-
-seed: 42
-num_workers: 4
-threshold: 0.5
-
-augment: false
-amp: true
-
-out_dir: "runs/busi_pb"
-
 dataset:
   name: busi
-  images: "/beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/lesions/images/*.png"
-  masks: "/beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/lesions/masks/*.png"
-  target: "Breast lesion foreground from prepared BUSI masks"
-  preparation: "Prepared PNG image/mask pairs; inspect source preparation separately"
+  prepared_root: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI
+  images: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/lesions/images/**/*.png
+  masks: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/lesions/masks/**/*.png
+  target: Breast lesion foreground
+  preparation: Existing prepared BUSI lesion pairs; retain the source preparation
+    protocol
+epochs: 100
+evaluate:
+  checkpoint: ../runs/busi_pb/best_dice.pt
+  device: auto
+  out_dir: ../runs/busi_pb/evaluation
+  postprocess: false
+  split_csv: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/metadata/test_split.csv
+filters:
+- 32
+- 64
+- 128
+image_size: 256
+learning_rate: 0.0001
+loss: bce_dice
+model: portable_bridge
+notes:
+- Uses existing BUSI lesion split CSVs; patient independence requires source metadata.
+postprocessing: []
+predict:
+  checkpoint: ../runs/busi_pb/best_dice.pt
+  device: auto
+  image: null
+  output: ../runs/busi_pb/prediction.png
+  postprocess: false
 smoke_test:
-  out_dir: ../runs/smoke_test/busi
   num_samples: 6
+  out_dir: ../runs/smoke_test/busi
+split:
+  type: prepared_explicit
+  validation: 0.15
+  test: 0.15
+  seed: 42
+threshold: 0.5
+train:
+  amp: true
+  augment: false
+  device: auto
+  lr_factor: 0.05
+  lr_patience: 10
+  num_workers: 4
+  out_dir: ../runs/busi_pb
+  patience: 30
+  test_split: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/metadata/test_split.csv
+  train_split: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/metadata/train_split.csv
+  val_split: /beegfs/home/mrashid/datasets/Healthcare/PB_U-NET/data/BUSI/metadata/val_split.csv
+  deterministic: true

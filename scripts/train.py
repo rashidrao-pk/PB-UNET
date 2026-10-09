@@ -161,6 +161,7 @@ def parse_args() -> argparse.Namespace:
         default=0.15,
     )
 
+    p.add_argument("--deterministic", action="store_true")
     p.add_argument(
         "--seed",
         type=int,
@@ -209,7 +210,7 @@ def parse_args() -> argparse.Namespace:
 
     p.add_argument(
         "--augment",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
     )
 
     p.add_argument(
@@ -246,6 +247,7 @@ def write_split(
                 "image",
                 "mask",
                 "group",
+                "roi",
             ]
         )
 
@@ -255,6 +257,7 @@ def write_split(
                     s.image,
                     s.mask,
                     s.group or "",
+                    s.roi or "",
                 ]
             )
 
@@ -381,6 +384,9 @@ def run_epoch(
                     masks,
                 )
 
+            if not torch.isfinite(loss):
+                raise FloatingPointError("Non-finite training/validation loss")
+
             if training:
 
                 if amp_enabled:
@@ -396,6 +402,7 @@ def run_epoch(
             logits.detach(),
             masks,
             threshold,
+            roi=batch["roi"].to(device) if "roi" in batch else None,
         )
 
         sums["loss"] += (
@@ -432,6 +439,8 @@ def build_checkpoint(
 ):
 
     return {
+        "format_version": 2,
+        "loss_name": args.loss,
         "model_state": model.state_dict(),
         "model_name": args.model,
         "in_channels": args.channels,
@@ -448,7 +457,7 @@ def main() -> None:
 
     args = parse_args()
 
-    seed_everything(args.seed)
+    seed_everything(args.seed, deterministic=args.deterministic)
 
     device = resolve_device(
         args.device
@@ -458,10 +467,13 @@ def main() -> None:
         args.out_dir
     )
 
+    if any((out / name).exists() for name in ("best.pt", "best_dice.pt", "best_loss.pt", "last.pt", "history.json")):
+        raise SystemExit(f"Existing training artifacts in {out}; use a new --out-dir or skip training")
     out.mkdir(
         parents=True,
         exist_ok=True,
     )
+    save_json(vars(args), out / "config.json")
 
     # =========================================================
     # Dataset / split handling
