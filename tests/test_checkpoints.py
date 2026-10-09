@@ -1,9 +1,9 @@
 import pytest
 import torch
-from portable_bridge_unet.models import MODEL_NAMES, PortableBridgeUNet, build_model
+from portable_bridge_unet.models import build_model
 from portable_bridge_unet.checkpoints import load_checkpoint
 
-@pytest.mark.parametrize("name", MODEL_NAMES)
+@pytest.mark.parametrize("name", ["unet", "portable_bridge"])
 def test_training_step_and_checkpoint_roundtrip(tmp_path, name):
     torch.manual_seed(42)
     model = build_model(name, in_channels=1, filters=[4, 8, 16])
@@ -19,7 +19,7 @@ def test_training_step_and_checkpoint_roundtrip(tmp_path, name):
     assert not torch.equal(before, next(model.parameters()))
     model.eval()
     path = tmp_path / "best.pt"
-    torch.save(dict(format_version=2, model_name=name, model_state=model.state_dict(),
+    torch.save(dict(model_name=name, model_state=model.state_dict(),
                     in_channels=1, filters=[4, 8, 16], image_size=32, threshold=0.4), path)
     restored, metadata = load_checkpoint(path)
     assert metadata["threshold"] == 0.4
@@ -31,21 +31,3 @@ def test_invalid_checkpoint(tmp_path):
     torch.save({}, path)
     with pytest.raises(ValueError, match="missing fields"):
         load_checkpoint(path)
-
-@pytest.mark.parametrize("refined", [False, True])
-def test_historical_pb_checkpoint(tmp_path, refined):
-    model = (PortableBridgeUNet(in_channels=1, filters=[4, 8, 16], decoder_mode="nearest",
-                               spatial_encoder_dropout=False) if refined else
-             build_model("portable_bridge_legacy", in_channels=1, filters=[4, 8, 16]))
-    model.eval()
-    path = tmp_path / "old.pt"
-    torch.save(dict(model_name="portable_bridge", model_state=model.state_dict(),
-                    in_channels=1, filters=[4, 8, 16]), path)
-    if refined:
-        with pytest.warns(UserWarning, match="mixed interpolation"):
-            restored, _ = load_checkpoint(path)
-    else:
-        restored, _ = load_checkpoint(path)
-    x = torch.randn(2, 1, 32, 32)
-    with torch.no_grad():
-        torch.testing.assert_close(model(x), restored(x))

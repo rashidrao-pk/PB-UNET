@@ -1,26 +1,15 @@
 # Portable-Bridge U-Net — PyTorch edition
 
-Dataset code is organized as a reusable library under
-[`portable_bridge_unet.data`](src/portable_bridge_unet/data/): `retrieve`,
-`preprocess`, loaders, checks, and visualization. Existing script commands and
-imports remain compatible. See [library APIs and CLI usage](docs/LIBRARY.md).
-
-ISIC 2016 Task 1 is supported for RGB skin-lesion segmentation. See
-[ISIC setup](docs/ISIC2016.md) and the [requested three-paper dataset review](docs/RELATED_DATASETS.md).
-
-Montgomery County chest X-rays are now supported for **both-lung segmentation**.
-See [download, preparation, Epito training, benchmark, and figure instructions](docs/MONTGOMERY.md).
-
 This is the **active PyTorch rewrite** of the supplied Portable-Bridge U-Net project. TensorFlow/Keras is no longer required for training, evaluation, inference, metrics, or post-processing.
 
-The `portable_bridge_legacy` model preserves the paper-era architecture. The revised `portable_bridge` adds refinement, bilinear upsampling, and spatial dropout; it is a separate experiment.
+The rewrite preserves the architecture actually encoded in the paper-era source while fixing the reproducibility problems identified during the audit.
 
 ## What was converted
 
 | Old TensorFlow/Keras component   | PyTorch replacement                                      |
 | -------------------------------- | -------------------------------------------------------- |
 | `model.py` baseline U-Net        | `src/portable_bridge_unet/models.py::BaselineUNet`       |
-| `prop_model.py` proposed network | `src/portable_bridge_unet/models.py::PortableBridgeLegacyUNet` |
+| `prop_model.py` proposed network | `src/portable_bridge_unet/models.py::PortableBridgeUNet` |
 | `tf.data` image pipeline         | `torch.utils.data.Dataset/DataLoader`                    |
 | Keras BCE                        | `torch.nn.BCEWithLogitsLoss`                             |
 | Keras Adam                       | `torch.optim.Adam`                                       |
@@ -197,7 +186,7 @@ That is a new experiment and should not be described as an exact reproduction of
 PYTHONPATH=src pytest -q
 ```
 
-Tests verify all model output dimensions, legacy parameter parity, finite training gradients and losses, checkpoint round trips, and data/statistical workflows.
+Tests verify output dimensions, exact trainable parameter parity, and the post-processing behavior.
 
 ## Recommended next step
 
@@ -296,4 +285,13 @@ python scripts/run_benchmark.py --config configs/benchmark_busi_epito.yaml
 
 See `docs/MODEL_COMPARISONS.md` for the experimental protocol and ablation order.
 
-Additional datasets: [BraTS 2020/2021](docs/BRATS.md) (case-separated 2D FLAIR tumor segmentation) and [DRIVE](docs/DRIVE.md) (RGB retinal vessels with FOV-aware metrics). Both provide preparation, Epito/local PB and U-Net configs, benchmarks, and smoke previews.
+## Final paper experiments
+
+The repository now includes the remaining experiments for the cross-domain PB-U-Net manuscript:
+
+- `scripts/prepare_cvc_clinicdb.py` — prepare CVC-ClinicDB as an external test-only domain.
+- `scripts/run_multiseed.py` + `configs/multiseed_kvasir.yaml` — three-seed U-Net/PB-U-Net Kvasir evaluation.
+- `scripts/profile_models.py` — parameters, approximate FLOPs, latency, throughput and peak CUDA memory.
+- `scripts/select_qualitative_cases.py` — reproducibly select PB wins, comparable cases and PB failures.
+- `paper/main.tex` + `paper/references.bib` — working LaTeX manuscript.
+- `docs/NEXT_EXPERIMENTS.md` — exact Epito commands.

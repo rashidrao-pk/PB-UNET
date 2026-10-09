@@ -12,22 +12,21 @@ def binary_predictions(logits: torch.Tensor, threshold: float = 0.5) -> torch.Te
     return (torch.sigmoid(logits) >= threshold).to(torch.float32)
 
 
-def batch_confusion(pred: torch.Tensor, target: torch.Tensor, roi: torch.Tensor | None = None) -> tuple[torch.Tensor, ...]:
+def batch_confusion(pred: torch.Tensor, target: torch.Tensor) -> tuple[torch.Tensor, ...]:
     pred = _flatten_binary(pred.float())
     target = _flatten_binary(target.float())
-    valid = torch.ones_like(pred) if roi is None else _flatten_binary(roi.float())
-    tp = (pred * target * valid).sum(dim=1)
-    fp = (pred * (1 - target) * valid).sum(dim=1)
-    fn = ((1 - pred) * target * valid).sum(dim=1)
-    tn = ((1 - pred) * (1 - target) * valid).sum(dim=1)
+    tp = (pred * target).sum(dim=1)
+    fp = (pred * (1 - target)).sum(dim=1)
+    fn = ((1 - pred) * target).sum(dim=1)
+    tn = ((1 - pred) * (1 - target)).sum(dim=1)
     return tp, fp, fn, tn
 
 
 def batch_metrics_from_logits(
-    logits: torch.Tensor, target: torch.Tensor, threshold: float = 0.5, eps: float = 1e-7, roi: torch.Tensor | None = None
+    logits: torch.Tensor, target: torch.Tensor, threshold: float = 0.5, eps: float = 1e-7
 ) -> dict[str, torch.Tensor]:
     pred = binary_predictions(logits, threshold)
-    tp, fp, fn, tn = batch_confusion(pred, target, roi=roi)
+    tp, fp, fn, tn = batch_confusion(pred, target)
     dice = (2 * tp + eps) / (2 * tp + fp + fn + eps)
     iou = (tp + eps) / (tp + fp + fn + eps)
     precision = (tp + eps) / (tp + fp + eps)

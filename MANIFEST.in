@@ -1,0 +1,11 @@
+include README.md LICENSE CITATION.cff REPRODUCIBILITY.md MODEL_CARD.md CONTRIBUTING.md requirements.txt
+recursive-include configs *.yaml
+recursive-include docs *.md
+recursive-include environments *.md *.txt *.json
+recursive-include scripts *.py
+recursive-include audit *.py *.md
+recursive-include legacy_reference *.py
+recursive-include legacy_tensorflow_reference *.py
+recursive-include tests *.py
+recursive-exclude * __pycache__ *.py[cod]
+prune runs

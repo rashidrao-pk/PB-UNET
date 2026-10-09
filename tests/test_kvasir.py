@@ -2,8 +2,8 @@ import csv
 import cv2
 import numpy as np
 import pytest
-from portable_bridge_unet.data.preprocess.kvasir import prepare_kvasir, source_pairs
-from portable_bridge_unet.data.checks import check_dataset
+from portable_bridge_unet.kvasir import prepare_kvasir, source_pairs
+from portable_bridge_unet.dataset_check import check_dataset
 
 def fixture_config(tmp_path):
     raw, out = tmp_path / "raw", tmp_path / "prepared"

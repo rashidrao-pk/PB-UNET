@@ -1,4 +1,4 @@
-model: portable_bridge_legacy
+model: portable_bridge
 image_size: 256
 channels: 3
 filters: [32, 64, 128]

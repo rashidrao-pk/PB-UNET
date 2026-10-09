@@ -1,7 +1,6 @@
-"""Load saved architectures, including unversioned historical PB checkpoints."""
-import warnings
+"""Load the architecture and weights saved by the trainer."""
 import torch
-from .models import build_model, PortableBridgeUNet
+from .models import build_model
 
 def load_checkpoint(path, device="cpu"):
     checkpoint = torch.load(path, map_location="cpu", weights_only=True)
@@ -10,22 +9,9 @@ def load_checkpoint(path, device="cpu"):
     missing = {"model_name", "model_state"} - checkpoint.keys()
     if missing:
         raise ValueError(f"checkpoint missing fields: {sorted(missing)}")
-    name = checkpoint["model_name"]
-    settings = dict(in_channels=int(checkpoint.get("in_channels", 3)),
-                    filters=checkpoint.get("filters", [32, 64, 128]))
-    historical_pb = name.lower().replace("-", "_") in (
-        "portable_bridge", "pb_unet", "portable_bridge_unet")
-    if historical_pb and checkpoint.get("format_version", 1) < 2:
-        if any(key.startswith("final_refine.") for key in checkpoint["model_state"]):
-            warnings.warn("Unversioned refined PB checkpoint: assuming historical mixed interpolation "
-                          "(bilinear bridge/final, nearest decoder). Retrain if provenance differs.", UserWarning)
-            model = PortableBridgeUNet(**settings, decoder_mode="nearest", spatial_encoder_dropout=False)
-            resolved = "historical_portable_bridge_mixed"
-        else:
-            model = build_model("portable_bridge_legacy", **settings)
-            resolved = "portable_bridge_legacy"
-    else:
-        model = build_model(name, **settings)
-        resolved = name
+    model = build_model(
+        checkpoint["model_name"], in_channels=int(checkpoint.get("in_channels", 3)),
+        filters=checkpoint.get("filters", [32, 64, 128]),
+    )
     model.load_state_dict(checkpoint["model_state"], strict=True)
-    return model.to(device).eval(), {**checkpoint, "resolved_model_name": resolved}
+    return model.to(device).eval(), checkpoint

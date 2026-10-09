@@ -1,0 +1,275 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{amsmath,amssymb}
+\usepackage{siunitx}
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{threeparttable}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{float}
+\usepackage{authblk}
+\usepackage{natbib}
+
+\title{Portable Bridge U-Net: Cross-Domain Multi-Scale Feature Reuse for Medical Image Segmentation}
+
+\author[1]{Mehreen Irshad}
+\author[2]{Muhammad Rashid\thanks{Corresponding author: Muhammad.Rashid@unito.it}}
+\author[1]{Musarrat Yasmin}
+\author[1]{Muhammad Sharif}
+\affil[1]{Department of Computer Science, COMSATS University Islamabad, Wah Campus, Pakistan}
+\affil[2]{Department of Computer Science, University of Turin, 10149 Turin, Italy}
+\date{}
+
+% Pending values should be replaced after the remaining experiments finish.
+\newcommand{\todoresult}[1]{\textcolor{red}{\textbf{TODO: #1}}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Accurate medical image segmentation requires preservation of fine spatial detail while capturing high-level semantic context. Conventional U-Net architectures address this requirement through encoder-to-decoder skip connections, but these connections primarily transfer features between corresponding resolution levels and do not explicitly reuse intermediate representations across the network hierarchy. We revisit \emph{Portable Bridge U-Net (PB-U-Net)}, a U-Net-derived architecture that inserts a structured multi-level feature-reuse pathway between encoder and decoder. The Portable Bridge progressively combines previously extracted encoder representations through serial and parallel fusion before forwarding them to the decoding path. Unlike the original cardiac-specific evaluation, this study performs a unified cross-domain assessment on cardiac MRI, breast ultrasound, and RGB gastrointestinal endoscopy. PB-U-Net is compared under identical data splits and optimization settings with U-Net, U-Net++, Attention U-Net, ResUNet, ResUNet++, and UNet3+. Performance is assessed using Dice, intersection-over-union (IoU), precision, recall, accuracy, and the 95th-percentile Hausdorff distance (HD95), together with paired Wilcoxon tests and bootstrap confidence intervals. On Kvasir-SEG, the legacy Portable Bridge variant achieves a mean Dice of 0.7480, compared with 0.6830 for U-Net, and ranks first among all nine evaluated architectures in Dice. In an earlier paired PB-versus-U-Net Kvasir comparison, the Dice improvement was +0.0409 with a 95\% bootstrap confidence interval of [0.0145, 0.0666] and a Wilcoxon signed-rank $p$-value of $2.28\times10^{-5}$. On BUSI, PB-U-Net provides a smaller Dice gain but significantly improves precision, while on cardiac MRI its performance is comparable to U-Net. These findings show that Portable Bridge feature reuse is not uniformly superior across modalities, but can provide substantial benefits on heterogeneous lesion-segmentation tasks. External CVC-ClinicDB evaluation, multi-seed validation, computational profiling, and qualitative failure analysis are included as final validation stages in the reproducible experimental pipeline.
+\end{abstract}
+
+\noindent\textbf{Keywords:} medical image segmentation; U-Net; Portable Bridge; multi-scale feature fusion; feature reuse; cardiac MRI; breast ultrasound; polyp segmentation; endoscopy
+
+\section{Introduction}
+Medical image segmentation is central to computer-assisted diagnosis, quantitative imaging, treatment planning, and clinical decision support. The task requires delineating anatomically or pathologically relevant regions despite substantial variability in imaging modality, acquisition conditions, target morphology, contrast, texture, and image quality. These challenges become particularly evident when models are evaluated across domains such as magnetic resonance imaging (MRI), ultrasound, and RGB endoscopy.
+
+U-Net \citep{ronneberger2015unet} remains one of the most influential architectures for biomedical image segmentation. Its symmetric encoder--decoder structure combines contextual information from progressively downsampled feature maps with spatially detailed encoder features through lateral skip connections. Although effective, standard skip connections primarily connect corresponding resolution levels. Consequently, features learned at different semantic depths are not explicitly reused through an intermediate hierarchical fusion process before decoding.
+
+Several U-Net variants address this limitation from different perspectives. U-Net++ \citep{zhou2018unetpp} introduces nested dense skip pathways to reduce the semantic gap between encoder and decoder representations. Attention U-Net \citep{oktay2018attention} uses attention gates to suppress irrelevant activations before skip fusion. Residual variants improve optimization through residual mappings, while UNet3+ \citep{huang2020unet3plus} performs full-scale multi-level feature aggregation in the decoder. These methods improve feature transfer, but rely on nested decoders, attention modules, residual redesign, or dense multi-scale fusion.
+
+Portable Bridge U-Net (PB-U-Net) explores a different design principle. Rather than modifying only the encoder or decoder, PB-U-Net inserts a dedicated intermediate bridge between them. Multi-level encoder features are progressively combined and transformed through two interconnected bridge stages before entering the decoder. The hypothesis is that structured reuse of already extracted representations can preserve complementary low-level boundary information and high-level semantic cues more effectively than one-to-one skip connections alone.
+
+The original PB-U-Net study was developed for left-ventricular segmentation from cardiac MRI. However, evaluation on a single application does not establish whether Portable Bridge feature reuse provides a general architectural benefit. Moreover, medical segmentation architectures should be compared under identical train/validation/test partitions, optimization settings, and evaluation code to avoid confounding architectural effects with protocol differences.
+
+This work therefore revisits PB-U-Net under a reproducible cross-domain protocol spanning cardiac MRI, breast ultrasound, and RGB gastrointestinal endoscopy. In addition to U-Net, we implement and compare U-Net++, Attention U-Net, ResUNet, ResUNet++, and UNet3+ within one codebase. The study further includes paired per-image statistical testing, bootstrap confidence intervals, computational profiling, repeated-seed experiments, and external polyp-domain evaluation.
+
+The main contributions are:
+\begin{enumerate}[leftmargin=*]
+    \item We reformulate PB-U-Net as a general cross-domain medical image segmentation architecture centered on structured multi-level feature reuse.
+    \item We directly compare PB-U-Net with U-Net, U-Net++, Attention U-Net, ResUNet, ResUNet++, and UNet3+ under a unified implementation and identical data partitions.
+    \item We evaluate the architecture across cardiac MRI, breast ultrasound, and RGB gastrointestinal endoscopy, and add CVC-ClinicDB as an external endoscopy test domain.
+    \item We perform paired Wilcoxon tests, win/loss analysis, and paired bootstrap confidence intervals in addition to aggregate segmentation metrics.
+    \item We investigate revised and gated Portable Bridge variants and show that additional bridge complexity does not necessarily improve overlap performance.
+    \item We quantify parameter count, approximate FLOPs, inference latency, throughput, and GPU memory, and perform multi-seed and qualitative failure analyses.
+\end{enumerate}
+
+\section{Related Work}
+\subsection{U-Net and skip-connected encoder--decoder segmentation}
+U-Net \citep{ronneberger2015unet} established the symmetric encoder--decoder architecture that is now standard in biomedical segmentation. Encoder stages extract increasingly abstract features, while the decoder restores spatial resolution. Lateral skip connections transfer high-resolution encoder information to corresponding decoder levels. This structure is effective but does not explicitly integrate information across multiple encoder depths before decoding.
+
+\subsection{Nested and dense skip pathways}
+U-Net++ \citep{zhou2018unetpp} introduces nested convolutional pathways between encoder and decoder to progressively reduce the semantic discrepancy between features at different stages. The dense skip formulation improves representation fusion, but increases graph complexity and the number of intermediate decoding nodes.
+
+\subsection{Attention-guided skip fusion}
+Attention U-Net \citep{oktay2018attention} applies attention gates to encoder skip features, allowing the network to suppress irrelevant background activations before fusion. This mechanism improves feature selection, particularly when target structures are relatively small, but it does not explicitly construct an intermediate multi-level feature-reuse pathway.
+
+\subsection{Residual U-Net variants}
+Residual U-Net architectures combine encoder--decoder segmentation with residual blocks to improve gradient propagation and representation learning. ResUNet++ further incorporates architectural mechanisms intended to strengthen multi-scale learning and context modeling. In contrast, PB-U-Net retains relatively simple convolutional blocks and modifies inter-stage information flow through the Portable Bridge.
+
+\subsection{Full-scale multi-level fusion}
+UNet3+ \citep{huang2020unet3plus} aggregates features from multiple encoder and decoder scales at each decoder stage. It is therefore an especially relevant comparison for PB-U-Net. The main distinction is that PB-U-Net performs dedicated feature reuse before the main decoder, whereas UNet3+ performs full-scale aggregation within the decoding pathway.
+
+\section{Portable Bridge U-Net}
+\subsection{Overview}
+PB-U-Net contains three principal components:
+\begin{equation}
+\text{Encoder} \rightarrow \text{Portable Bridge} \rightarrow \text{Decoder}.
+\end{equation}
+The encoder produces a hierarchy of feature maps
+\begin{equation}
+E = \{E_1,E_2,\ldots,E_L\},
+\end{equation}
+where $E_1$ retains high-resolution spatial detail and $E_L$ contains the most abstract representation. The implementation evaluated here uses three levels with channel widths $\{32,64,128\}$.
+
+\subsection{Encoder}
+Each encoder level uses two consecutive $3\times3$ convolutional layers, each followed by batch normalization and ReLU activation:
+\begin{equation}
+\mathcal{C}(X)=\mathrm{ReLU}\left(\mathrm{BN}\left(W_2 * \mathrm{ReLU}(\mathrm{BN}(W_1 * X))\right)\right).
+\end{equation}
+The output at encoder level $l$ is
+\begin{equation}
+E_l = \mathcal{C}_l(X_l),
+\end{equation}
+followed by max pooling
+\begin{equation}
+X_{l+1}=\mathrm{Pool}(E_l).
+\end{equation}
+
+\subsection{Portable Bridge stage I: progressive fusion}
+The deepest encoder representation is first transformed by a bottleneck convolutional block. It is then progressively upsampled and concatenated with encoder features from deeper to shallower levels:
+\begin{equation}
+B_i^{(1)}=\mathcal{C}\left(\mathcal{U}(B_{i-1}^{(1)})\Vert E_{L-i+1}\right),
+\end{equation}
+where $\mathcal{U}(\cdot)$ denotes upsampling and $\Vert$ denotes channel-wise concatenation.
+
+\subsection{Portable Bridge stage II: reverse aggregation}
+Features generated in stage I are reused in a reverse aggregation path:
+\begin{equation}
+B_i^{(2)}=\mathcal{C}(B_{i-1}^{(2)})\Vert \widetilde{B}_i^{(1)},
+\end{equation}
+followed by downsampling where required. This creates a bidirectional feature-processing route before decoding.
+
+Conceptually, the standard mapping
+\begin{equation}
+E_l \rightarrow D_l
+\end{equation}
+is replaced by
+\begin{equation}
+E_1,\ldots,E_L \rightarrow \mathcal{PB}(E_1,\ldots,E_L) \rightarrow D,
+\end{equation}
+where $\mathcal{PB}$ denotes the Portable Bridge transformation.
+
+\subsection{Decoder}
+At each decoder stage, the current representation is upsampled and concatenated with the corresponding bridge-derived feature:
+\begin{equation}
+D_i=\mathcal{C}\left(\mathcal{U}(D_{i-1})\Vert B_i^{(2)}\right).
+\end{equation}
+A $1\times1$ convolution produces binary segmentation logits $Z$, with foreground probabilities
+\begin{equation}
+P=\sigma(Z).
+\end{equation}
+
+\subsection{Bridge variants}
+In addition to the original architecture (PB-U-Net Legacy), we evaluate a revised bridge with bilinear feature alignment and final decoder refinement, and an adaptive gated bridge (APB-U-Net). These variants test whether additional transformation or feature selection improves over the original direct feature-reuse mechanism.
+
+\section{Experimental Protocol}
+\subsection{Datasets}
+\paragraph{Sunnybrook cardiac MRI.}
+The cardiac MRI experiment represents the original anatomical segmentation domain. The reproducible preprocessing pipeline is used to construct matched image/mask pairs and held-out partitions. Final manuscript counts should be taken directly from the current preparation metadata rather than historical manuscript counts.
+
+\paragraph{BUSI breast ultrasound.}
+BUSI contains 437 benign, 210 malignant, and 133 normal ultrasound images. The primary lesion-segmentation experiment uses the 647 benign and malignant cases with non-empty masks. A class-stratified split yields 452 training, 97 validation, and 98 test images.
+
+\paragraph{Kvasir-SEG.}
+Kvasir-SEG contains 1,000 RGB gastrointestinal endoscopy images with corresponding polyp masks. We use a fixed 700/150/150 train/validation/test split with seed 42. All models are evaluated on exactly the same partition.
+
+\paragraph{CVC-ClinicDB external test set.}
+CVC-ClinicDB contains 612 colonoscopy frames with polyp masks. In the external-domain experiment, models trained on Kvasir-SEG are evaluated directly on all CVC-ClinicDB images without fine-tuning. This experiment tests whether Portable Bridge gains transfer beyond the Kvasir source domain. \todoresult{Insert external CVC-ClinicDB results after running scripts/prepare\_cvc\_clinicdb.py and evaluation.}
+
+\subsection{Training protocol}
+All inputs are resized to $256\times256$. The primary channel widths are $\{32,64,128\}$. Models are optimized with Adam using an initial learning rate of $10^{-4}$. The architecture benchmark uses a combined binary cross-entropy and Dice loss:
+\begin{equation}
+\mathcal{L}=\lambda_{\mathrm{BCE}}\mathcal{L}_{\mathrm{BCE}}+\lambda_{\mathrm{Dice}}\mathcal{L}_{\mathrm{Dice}},
+\end{equation}
+with equal weights. The checkpoint with the highest validation Dice is used for primary test evaluation. A ReduceLROnPlateau scheduler and early stopping are applied consistently across models.
+
+\subsection{Metrics}
+We report Dice, IoU, precision, recall, accuracy, and HD95. Dice and IoU are defined as
+\begin{equation}
+\mathrm{Dice}=\frac{2TP}{2TP+FP+FN}, \qquad
+\mathrm{IoU}=\frac{TP}{TP+FP+FN}.
+\end{equation}
+Precision and recall are
+\begin{equation}
+\mathrm{Precision}=\frac{TP}{TP+FP}, \qquad
+\mathrm{Recall}=\frac{TP}{TP+FN}.
+\end{equation}
+Because segmentation metrics may be strongly skewed by failure cases, both mean and median values are reported where relevant.
+
+\subsection{Statistical analysis}
+For models evaluated on the same test images, paired per-image differences are analyzed using the Wilcoxon signed-rank test. We additionally report PB wins, baseline wins, ties, mean and median paired differences, and 10,000-resample paired percentile bootstrap confidence intervals for Dice. The sampling unit is the image because patient-level identities are unavailable for Kvasir-SEG.
+
+\subsection{Computational profiling}
+For each architecture, we report trainable parameters, approximate convolutional/linear FLOPs for a $256\times256$ input, mean inference latency, images per second, and peak CUDA memory. Profiling is performed with the same batch size and hardware. \todoresult{Insert profiling hardware and values from scripts/profile\_models.py.}
+
+\subsection{Repeated-seed evaluation}
+U-Net and PB-U-Net Legacy are repeated with seeds 42, 123, and 2026 on the fixed Kvasir split. The train/validation/test images therefore remain constant and only initialization and stochastic optimization differ. \todoresult{Insert mean$\pm$SD results from scripts/run\_multiseed.py.}
+
+\section{Results}
+\subsection{Kvasir-SEG architecture benchmark}
+Table~\ref{tab:kvasir-benchmark} summarizes the raw Kvasir-SEG benchmark using the unified BCE+Dice protocol.
+
+\begin{table*}[t]
+\centering
+\caption{Kvasir-SEG raw test performance under a unified training and evaluation protocol. Higher is better except HD95.}
+\label{tab:kvasir-benchmark}
+\small
+\begin{tabular}{lrrrrrr}
+\toprule
+Model & Dice $\uparrow$ & IoU $\uparrow$ & Precision $\uparrow$ & Recall $\uparrow$ & Accuracy $\uparrow$ & HD95 $\downarrow$ \\
+\midrule
+PB-U-Net Legacy & \textbf{0.7480} & \textbf{0.6452} & \textbf{0.8329} & 0.7613 & \textbf{0.9283} & 59.48 \\
+PB-U-Net Revised & 0.7425 & 0.6375 & 0.7925 & \textbf{0.7776} & 0.9248 & \textbf{51.30} \\
+APB-U-Net & 0.7292 & 0.6241 & 0.8041 & 0.7575 & 0.9251 & 53.53 \\
+Attention U-Net & 0.6981 & 0.5756 & 0.7938 & 0.7098 & 0.9134 & 60.26 \\
+U-Net++ & 0.6970 & 0.5807 & 0.7904 & 0.7063 & 0.9165 & 62.34 \\
+UNet3+ & 0.6941 & 0.5712 & 0.7875 & 0.7048 & 0.9142 & 61.86 \\
+U-Net & 0.6830 & 0.5618 & 0.7856 & 0.6858 & 0.9149 & 62.54 \\
+ResUNet & 0.6779 & 0.5547 & 0.7628 & 0.6970 & 0.9118 & 64.26 \\
+ResUNet++ & 0.6746 & 0.5577 & 0.7484 & 0.7067 & 0.9124 & 60.04 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+PB-U-Net Legacy ranks first in Dice, IoU, precision, and accuracy. Relative to U-Net, the absolute gains are approximately +0.0650 Dice and +0.0834 IoU. The revised PB variant achieves the best mean HD95 and the highest recall, indicating that its additional refinement shifts the trade-off toward boundary quality and sensitivity. However, the original bridge remains strongest for overlap performance.
+
+\subsection{Paired Kvasir analysis}
+In the earlier paired PB-versus-U-Net Kvasir run, PB improved mean Dice by +0.04087, with a 95\% bootstrap confidence interval of [0.01446, 0.06662] and Wilcoxon $p=2.28\times10^{-5}$. IoU improved by +0.05981 ($p=3.97\times10^{-6}$), precision by +0.07530 ($p=3.26\times10^{-8}$), and HD95 decreased by 9.12 pixels ($p=5.15\times10^{-6}$). Recall increased modestly but did not reach conventional significance ($p=0.0659$). The final manuscript should additionally report the paired statistics produced by the full nine-model BCE+Dice benchmark.
+
+\subsection{BUSI ultrasound}
+\begin{table}[H]
+\centering
+\caption{BUSI raw test performance.}
+\begin{tabular}{lrrrrr}
+\toprule
+Model & Dice & IoU & Precision & Recall & HD95 \\
+\midrule
+U-Net & 0.6322 & 0.5396 & 0.7521 & \textbf{0.6235} & \textbf{63.67} \\
+PB-U-Net & \textbf{0.6423} & \textbf{0.5661} & \textbf{0.8462} & 0.6209 & 64.08 \\
+\bottomrule
+\end{tabular}
+\end{table}
+The Dice gain on BUSI is modest and not statistically significant ($p=0.4227$), with a paired mean Dice confidence interval crossing zero. In contrast, precision improves from 0.7521 to 0.8462 ($p=3.5\times10^{-5}$), while recall remains essentially unchanged. This indicates that PB-U-Net's principal BUSI advantage is suppression of false-positive lesion predictions rather than a uniform increase in overlap.
+
+\subsection{Cardiac MRI}
+On the clean cardiac MRI rerun, U-Net achieves approximately 0.9177 mean Dice and 0.8633 mean IoU, whereas PB-U-Net obtains approximately 0.9152 Dice and 0.8606 IoU. Thus, the bridge does not improve the original cardiac task under the reproducible evaluation. This negative result is retained because it demonstrates that Portable Bridge feature reuse is not uniformly beneficial across domains.
+
+\subsection{External CVC-ClinicDB generalization}
+\todoresult{Populate a table comparing Kvasir-trained U-Net and PB-U-Net Legacy on all 612 CVC-ClinicDB images without fine-tuning. Report Dice, IoU, precision, recall, accuracy, HD95, paired Wilcoxon tests, and bootstrap CI.}
+
+\subsection{Three-seed Kvasir robustness}
+\todoresult{Populate a table with seed 42/123/2026 results and mean$\pm$SD for U-Net and PB-U-Net Legacy.}
+
+\subsection{Computational efficiency}
+\todoresult{Populate parameter, GFLOPs, latency, throughput, and peak-memory table for all benchmark architectures.}
+
+\subsection{Qualitative analysis}
+Qualitative analysis is organized into three categories selected from paired per-image Dice differences: (i) the strongest PB-U-Net wins, (ii) comparable cases with near-zero difference, and (iii) PB-U-Net failures where U-Net performs better. Figure~\ref{fig:qualitative} should show the input, ground truth, U-Net prediction, PB-U-Net prediction, and PB overlay for representative examples generated automatically by the repository.
+
+\begin{figure*}[t]
+\centering
+\fbox{\parbox[c][5cm][c]{0.95\textwidth}{\centering Replace with generated qualitative panels: PB wins, comparable cases, and PB failures.}}
+\caption{Representative qualitative comparison between U-Net and PB-U-Net. Cases are selected using paired per-image Dice differences rather than manually cherry-picking images.}
+\label{fig:qualitative}
+\end{figure*}
+
+\section{Discussion}
+The cross-domain experiments show that Portable Bridge feature reuse has a task-dependent effect. On cardiac MRI, standard U-Net already performs strongly and the bridge provides no meaningful gain. On BUSI, the most consistent effect is improved precision, suggesting better rejection of false-positive regions in noisy ultrasound images. The largest gains occur on Kvasir-SEG, where polyps vary substantially in shape, size, texture, color, viewing distance, illumination, and background context.
+
+The Kvasir architecture benchmark is particularly informative because PB-U-Net does not merely outperform the shallow U-Net baseline; it also exceeds U-Net++, Attention U-Net, ResUNet, ResUNet++, and UNet3+ under the same implementation and training protocol. This reduces the likelihood that the observed advantage is solely due to an underpowered baseline.
+
+The bridge-variant ablation further shows that additional complexity is not automatically beneficial. The revised PB variant improves HD95 and recall but slightly reduces Dice relative to PB-U-Net Legacy, while adaptive gating reduces Dice further. One interpretation is that the original bridge benefits from relatively direct preservation of heterogeneous multi-resolution features, whereas additional feature transformations can suppress useful information.
+
+The external CVC-ClinicDB experiment is designed to distinguish in-domain fitting from transferable feature reuse. If the Kvasir-trained PB-U-Net retains an advantage without CVC fine-tuning, this would provide stronger evidence that the bridge supports generalization rather than only adapting to one polyp dataset. The repeated-seed experiment similarly tests whether the observed Kvasir advantage is robust to optimization stochasticity.
+
+\section{Limitations}
+This study has several limitations. First, not all datasets provide patient identifiers, so Kvasir and CVC statistical analyses use images rather than patients as sampling units. Second, the architecture benchmark initially uses one primary random seed; the final study therefore includes repeated-seed U-Net and PB-U-Net experiments. Third, PB-U-Net contains more parameters than the baseline U-Net, and performance gains should therefore be interpreted together with the computational profiling results. Fourth, the datasets differ substantially in modality, target structure, size, and acquisition characteristics; absolute metrics should not be compared directly across domains. Finally, the CVC-ClinicDB experiment provides one external endoscopy domain, and broader validation on datasets such as CVC-ColonDB, CVC-300, and ETIS-LaribPolypDB would further strengthen conclusions about polyp-domain generalization.
+
+\section{Conclusion}
+We revisited Portable Bridge U-Net as a cross-domain medical image segmentation architecture centered on structured multi-level feature reuse. Under a unified implementation, the architecture is neutral on the original cardiac MRI task, improves precision on BUSI ultrasound, and yields its strongest gains on Kvasir-SEG RGB endoscopy. On Kvasir-SEG, PB-U-Net Legacy ranks first in Dice among nine evaluated architectures, including U-Net++, Attention U-Net, ResUNet, ResUNet++, and UNet3+. These results indicate that a dedicated intermediate feature-reuse pathway can be an effective alternative to nested decoders, attention mechanisms, residual redesign, and full-scale decoder aggregation when segmentation requires integration of heterogeneous low- and high-level visual cues. The final external-domain, repeated-seed, computational, and qualitative analyses are designed to establish whether this advantage is robust, efficient, and transferable.
+
+\section*{Data and Code Availability}
+The experiments use public medical image segmentation datasets. The reproducible PyTorch implementation, dataset preparation scripts, fixed split manifests, evaluation code, statistical comparison utilities, profiling tools, and qualitative-analysis scripts are maintained in the PB-UNET repository. Dataset-specific licenses and access conditions should be respected when obtaining the raw data.
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+\end{document}

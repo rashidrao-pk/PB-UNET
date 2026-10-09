@@ -2,18 +2,11 @@
 
 This document describes the datasets planned for the PyTorch reproduction and cross-domain validation of **Portable-Bridge U-Net (PB-U-Net)**.
 
-[ISIC 2016 Task 1](ISIC2016.md) is now implemented for RGB skin-lesion
-segmentation with the official test set preserved. See the
-[LV-UNet / brain-bridge / S-UNet dataset review](RELATED_DATASETS.md) for study
-protocols and the limits of comparing published scores with our experiments.
-
 Recommended order:
 
 1. **Sunnybrook / MICCAI 2009 Cardiac MRI** — reproduce the original paper.
 2. **BUSI** — cross-modality validation on breast ultrasound.
 3. **Kvasir-SEG** — RGB endoscopic polyp segmentation.
-   **Montgomery County** is also implemented for chest X-ray lung segmentation;
-   see [the complete setup guide](MONTGOMERY.md).
 4. **CVC-ClinicDB** — additional polyp training data.
 5. **CVC-300, CVC-ColonDB, ETIS-LaribPolypDB** — external cross-dataset testing.
 6. **PRS-Med** — optional source/benchmark collection; not required for the first PB-U-Net experiments.

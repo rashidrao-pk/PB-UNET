@@ -5,8 +5,8 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from portable_bridge_unet.config import DEFAULT_CONFIG, load_config
-from portable_bridge_unet.data.checks import check_dataset
-from portable_bridge_unet.data.visualization import save_smoke_test
+from portable_bridge_unet.dataset_check import check_dataset
+from portable_bridge_unet.smoke_test import save_smoke_test
 
 def main():
     parser = argparse.ArgumentParser(description="Check raw downloads and decode all prepared image/mask pairs")

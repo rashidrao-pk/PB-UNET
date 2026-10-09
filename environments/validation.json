@@ -1,0 +1,13 @@
+{
+  "python": "3.10.15",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "machine": "arm64",
+  "torch": "2.14.1",
+  "cuda": null,
+  "date": "2026-10-07",
+  "test_result": "83 passed",
+  "pip_check": "No broken requirements found",
+  "device_validation": "CPU fixtures only",
+  "gpu_verified": false,
+  "hosted_ci_verified": false
+}

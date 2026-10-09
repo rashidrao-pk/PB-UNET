@@ -1,7 +1,7 @@
 import json
 import cv2
 import numpy as np
-from portable_bridge_unet.data.visualization import save_smoke_test
+from portable_bridge_unet.smoke_test import save_smoke_test
 
 def test_previews_and_model_forward(tmp_path):
     images, masks = tmp_path / "images", tmp_path / "masks"

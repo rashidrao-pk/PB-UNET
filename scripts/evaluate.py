@@ -12,7 +12,7 @@ import torch
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from portable_bridge_unet.data import Sample, make_loader, load_samples_csv
+from portable_bridge_unet.data import Sample, make_loader
 from portable_bridge_unet.evaluation import evaluate_loader
 from portable_bridge_unet.checkpoints import load_checkpoint
 from portable_bridge_unet.plotting import plot_evaluation_metrics
@@ -21,7 +21,11 @@ from portable_bridge_unet.utils import resolve_device, save_json
 
 
 def read_split(path: str) -> list[Sample]:
-    return load_samples_csv(path)
+    df = pd.read_csv(path)
+    return [
+        Sample(str(r.image), str(r.mask), None if pd.isna(getattr(r, "group", None)) or str(getattr(r, "group", "")) == "" else str(r.group))
+        for r in df.itertuples(index=False)
+    ]
 
 
 def main() -> None:
