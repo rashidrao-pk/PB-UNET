@@ -234,3 +234,7 @@ runs/**
 
 .DS_Store
 .DS_Store/**
+
+
+# Generated paper files
+paper/**
